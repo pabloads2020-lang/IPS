@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerador de IPS · Pleno Gestão de Investimentos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
 <style>
 :root {
   --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
@@ -125,12 +123,15 @@ textarea:focus { border-color: var(--gold); outline: none; }
     <div class="card">
       <div class="card-title">✏️ Edite o conteúdo gerado</div>
       <div id="editaveisContainer"></div>
-      <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-gold" id="btnExportarHTML">📄 Exportar como HTML</button>
+        <button class="btn btn-gold" id="btnExportarTXT">📝 Exportar como TXT</button>
+      </div>
     </div>
   </div>
 </main>
 
-<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta DOCX profissional</footer>
+<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta HTML/TXT</footer>
 
 <script>
 const TEXTO_FIXO_ITEM4 = `ANÁLISE, SELEÇÃO E MONITORAMENTO DE ATIVOS
@@ -307,114 +308,101 @@ Anamnese: ${anamnese}`;
   }
 };
 
-// EXPORTAR DOCX - VERSÃO SIMPLIFICADA
-document.getElementById('btnExportarDOCX').onclick = async () => {
+// EXPORTAR COMO HTML
+document.getElementById('btnExportarHTML').onclick = () => {
   if(!ultimoJson) { 
     setStatus('❌ Nenhum IPS gerado', 'err'); 
     return; 
   }
   
-  setOverlay(true, 'Gerando DOCX...');
+  const nome = document.getElementById('editNome')?.value || 'Cliente';
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
   
-  try {
-    // Verificar se a biblioteca docx está disponível
-    if (typeof docx === 'undefined') {
-      throw new Error('Biblioteca DOCX não carregou. Recarregue a página e tente novamente.');
-    }
-    
-    const nome = document.getElementById('editNome')?.value || 'Cliente';
-    const dataAtual = new Date().toLocaleDateString('pt-BR');
-    
-    const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
-    
-    // Criar documento
-    const doc = new Document({
-      sections: [{
-        properties: {
-          page: {
-            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
-          }
-        },
-        children: [
-          // Título
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44 })]
-          }),
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: nome.toUpperCase(), bold: true, size: 32 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Introdução
-          new Paragraph({
-            children: [new TextRun({ text: "INTRODUÇÃO", bold: true, size: 28 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ 
-              text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.", 
-              size: 24 
-            })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Sobre o Cliente
-          new Paragraph({
-            children: [new TextRun({ text: "SOBRE O CLIENTE", bold: true, size: 28 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Avaliações
-          new Paragraph({
-            children: [new TextRun({ text: "AVALIAÇÕES", bold: true, size: 28 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Recomendações
-          new Paragraph({
-            children: [new TextRun({ text: "RECOMENDAÇÕES ESTRATÉGICAS", bold: true, size: 28 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: document.getElementById('editItem3')?.value || '', size: 24 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Política de Investimento
-          new Paragraph({
-            children: [new TextRun({ text: TEXTO_FIXO_ITEM4, size: 24 })]
-          }),
-          new Paragraph({ children: [] }),
-          new Paragraph({
-            children: [new TextRun({ text: TABELA_POLITICA, size: 22 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Data
-          new Paragraph({
-            children: [new TextRun({ text: `João Pessoa, ${dataAtual}`, size: 24 })]
-          })
-        ]
-      }]
-    });
-    
-    // Gerar e baixar
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `IPS_${nome.replace(/[^a-zA-Z0-9]/g, '_')}.docx`);
-    setStatus('✅ DOCX exportado com sucesso!', 'ok');
-    
-  } catch(error) {
-    console.error('Erro detalhado na exportação:', error);
-    setStatus(`❌ Erro ao exportar: ${error.message}`, 'err');
-  } finally {
-    setOverlay(false);
+  const conteudoHTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>IPS - ${nome}</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+  h1 { text-align: center; color: #d4a017; }
+  h2 { color: #1a3a5c; margin-top: 30px; border-bottom: 2px solid #d4a017; padding-bottom: 5px; }
+  .data { text-align: right; margin-bottom: 30px; }
+</style>
+</head>
+<body>
+  <h1>PLANO INICIAL</h1>
+  <h1 style="font-size: 24px;">${nome.toUpperCase()}</h1>
+  <div class="data">${dataAtual}</div>
+  
+  <h2>INTRODUÇÃO</h2>
+  <p>Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.</p>
+  
+  <h2>SOBRE O CLIENTE</h2>
+  ${document.getElementById('editItem1')?.value.replace(/\n/g, '<br>') || ''}
+  
+  <h2>AVALIAÇÕES</h2>
+  ${document.getElementById('editItem2')?.value.replace(/\n/g, '<br>') || ''}
+  
+  <h2>RECOMENDAÇÕES ESTRATÉGICAS</h2>
+  ${document.getElementById('editItem3')?.value.replace(/\n/g, '<br>') || ''}
+  
+  <h2>ANÁLISE, SELEÇÃO E MONITORAMENTO DE ATIVOS</h2>
+  ${TEXTO_FIXO_ITEM4.replace(/\n/g, '<br>')}
+  
+  <h2>POLÍTICA DE INVESTIMENTO</h2>
+  <pre>${TABELA_POLITICA}</pre>
+</body>
+</html>`;
+  
+  const blob = new Blob([conteudoHTML], { type: 'text/html' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `IPS_${nome.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  
+  setStatus('✅ HTML exportado com sucesso!', 'ok');
+};
+
+// EXPORTAR COMO TXT
+document.getElementById('btnExportarTXT').onclick = () => {
+  if(!ultimoJson) { 
+    setStatus('❌ Nenhum IPS gerado', 'err'); 
+    return; 
   }
+  
+  const nome = document.getElementById('editNome')?.value || 'Cliente';
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+  
+  const conteudoTXT = `PLANO INICIAL
+${nome.toUpperCase()}
+${dataAtual}
+
+INTRODUÇÃO
+Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.
+
+SOBRE O CLIENTE
+${document.getElementById('editItem1')?.value || ''}
+
+AVALIAÇÕES
+${document.getElementById('editItem2')?.value || ''}
+
+RECOMENDAÇÕES ESTRATÉGICAS
+${document.getElementById('editItem3')?.value || ''}
+
+${TEXTO_FIXO_ITEM4}
+
+${TABELA_POLITICA}`;
+  
+  const blob = new Blob([conteudoTXT], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `IPS_${nome.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  
+  setStatus('✅ TXT exportado com sucesso!', 'ok');
 };
 
 // Theme Toggle
