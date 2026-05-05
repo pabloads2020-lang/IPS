@@ -167,48 +167,96 @@ function splitToParagraphs(text, bold = false) {
 async function exportarDOCX() {
   if (!ultimoJson) return setStatus('❌ Nenhum IPS gerado.', false);
   document.getElementById('overlay').classList.add('show');
+
   try {
     const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, HeadingLevel } = docx;
-    const canvas = document.getElementById('graficoPatrimonio');
-    const imageData = canvas.toDataURL('image/png');
-    const buffer = await fetch(imageData).then(r => r.arrayBuffer());
 
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({ text: "PLANO INICIAL", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: document.getElementById('editNome').value, bold: true, alignment: AlignmentType.CENTER }),
+    // --- preparar imagem do gráfico (fallback sem imagem habilitado) ---
+    let imageUint8 = null;
+    try {
+      const canvas = document.getElementById('graficoPatrimonio');
+      if (canvas) {
+        const dataUrl = canvas.toDataURL('image/png');
+        const ab = await fetch(dataUrl).then(r => r.arrayBuffer());
+        imageUint8 = new Uint8Array(ab); // IMPORTANTE: ImageRun espera TypedArray
+        console.log('[DOCX] imagem capturada, bytes=', imageUint8.length);
+      }
+    } catch (imgErr) {
+      console.warn('[DOCX] falha ao capturar imagem (continuando sem imagem):', imgErr);
+      imageUint8 = null;
+    }
 
-          new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(TEXTO_INTRODUCAO),
+    // --- util para dividir textos longos em parágrafos seguros ---
+    function safeParagraphs(text, bold = false) {
+      const MAX_CHUNK = 1000; // evita paragrafos gigantes
+      const children = [];
+      if (!text) return [];
+      // primeiro preserve quebras de linha explícitas
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      for (let line of lines) {
+        if (line.length <= MAX_CHUNK) {
+          children.push(new Paragraph({ children: [new TextRun({ text: line, bold, size: 24 })], spacing: { after: 150 } }));
+        } else {
+          // dividir em pedaços menores
+          for (let i = 0; i < line.length; i += MAX_CHUNK) {
+            const chunk = line.slice(i, i + MAX_CHUNK);
+            children.push(new Paragraph({ children: [new TextRun({ text: chunk, bold, size: 24 })], spacing: { after: 150 } }));
+          }
+        }
+      }
+      return children;
+    }
 
-          new Paragraph({ text: "1. Sobre o Cliente", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(document.getElementById('editItem1').value),
+    // --- montar documento ---
+    const docChildren = [];
 
-          new Paragraph({ text: "2. Avaliações", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(document.getElementById('editItem2').value),
+    docChildren.push(new Paragraph({ text: "PLANO INICIAL", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }));
+    docChildren.push(new Paragraph({ text: document.getElementById('editNome').value || ultimoJson.nome_cliente || '', bold: true, alignment: AlignmentType.CENTER }));
 
-          new Paragraph({ children: [new ImageRun({ data: buffer, transformation: { width: 550, height: 300 } })], alignment: AlignmentType.CENTER }),
+    docChildren.push(new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(TEXTO_INTRODUCAO));
 
-          new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(document.getElementById('editItem3').value),
+    docChildren.push(new Paragraph({ text: "1. Sobre o Cliente", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(document.getElementById('editItem1').value || ultimoJson.item1));
 
-          new Paragraph({ text: "4. Análise, Seleção e Monitoramento de Ativos", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(TEXTO_FIXO_ITEM4),
+    docChildren.push(new Paragraph({ text: "2. Avaliações", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(document.getElementById('editItem2').value || ultimoJson.item2));
 
-          new Paragraph({ text: "5. Política de Investimento", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...splitToParagraphs(TABELA_POLITICA)
-        ]
-      }]
-    });
+    if (imageUint8) {
+      docChildren.push(new Paragraph({ children: [new ImageRun({ data: imageUint8, transformation: { width: 550, height: 300 } })], alignment: AlignmentType.CENTER }));
+    } else {
+      console.log('[DOCX] pulando imagem no DOCX (imagem não disponível).');
+    }
 
+    docChildren.push(new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(document.getElementById('editItem3').value || ultimoJson.item3));
+
+    docChildren.push(new Paragraph({ text: "4. Análise, Seleção e Monitoramento de Ativos", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(TEXTO_FIXO_ITEM4));
+
+    docChildren.push(new Paragraph({ text: "5. Política de Investimento", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
+    docChildren.push(...safeParagraphs(TABELA_POLITICA));
+
+    const doc = new Document({ sections: [{ children: docChildren }] });
+
+    // --- logs para debug: quantos parágrafos e tamanho estimado ---
+    const totalParagraphs = docChildren.length;
+    const totalChars = (document.getElementById('editItem1').value || '').length +
+                       (document.getElementById('editItem2').value || '').length +
+                       (document.getElementById('editItem3').value || '').length +
+                       TEXTO_INTRODUCAO.length + TEXTO_FIXO_ITEM4.length + TABELA_POLITICA.length;
+    console.log(`[DOCX] parágrafos=${totalParagraphs} chars≈${totalChars}`);
+
+    // --- gerar blob e salvar ---
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `IPS_${document.getElementById('editNome').value.replace(/\s+/g, '_')}.docx`);
+    const safeName = `IPS_${(document.getElementById('editNome').value || ultimoJson.nome_cliente || 'cliente').replace(/[^a-zA-Z0-9_\\-]/g,'_')}.docx`;
+    saveAs(blob, safeName);
     setStatus('✅ Arquivo DOCX salvo!');
   } catch (e) {
-    console.error(e);
-    setStatus(`❌ Erro ao exportar: ${e.message}`, false);
+    console.error('[DOCX] erro durante exportação:', e);
+    // mostrar stack detalhada para depuração
+    setStatus(`❌ Erro ao exportar: ${e.message || e}`, false);
+    alert('Erro ao exportar DOCX — veja Console (F12) para detalhes.');
   } finally {
     document.getElementById('overlay').classList.remove('show');
   }
