@@ -240,6 +240,29 @@ document.getElementById('btnLimpar').onclick = () => {
   setStatus('🧹 Pronto para novo cliente', 'ok');
 };
 
+// Função para extrair JSON de qualquer texto
+function extractJSON(text) {
+  // Tenta encontrar { } no texto
+  let match = text.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch(e) {}
+  }
+  
+  // Tenta encontrar algo que pareça JSON
+  let start = text.indexOf('{');
+  let end = text.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    try {
+      let candidate = text.substring(start, end + 1);
+      return JSON.parse(candidate);
+    } catch(e) {}
+  }
+  
+  return null;
+}
+
 // Gerar IPS
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
@@ -251,23 +274,27 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   setOverlay(true, 'IA analisando...');
   
   try {
-    const prompt = `Responda APENAS com um JSON válido. Use aspas duplas.
+    const prompt = `Você é um planejador financeiro sênior. Com base na anamnese abaixo, gere um plano IPS completo.
 
+IMPORTANTE: Responda APENAS com um JSON válido, SEM texto antes ou depois.
+
+Formato obrigatório:
 {
-  "nome_cliente": "Nome do Cliente",
-  "item1_sobre_cliente": "## Família & Pessoal\\n...\\n\\n## Negócios\\n...\\n\\n## Fontes de Renda\\n...\\n\\n## Investimentos Atuais\\n...\\n\\n## Estilo de Vida\\n...\\n\\n## Objetivos\\n...",
-  "item2_avaliacoes": "## Patrimônio\\n...\\n\\n## Capacidade de Aporte\\n...\\n\\n## Projeção\\n...",
-  "item3_recomendacoes": "## Gestão de Projetos\\n...\\n\\n## Renda Passiva\\n...\\n\\n## Alocação Estratégica\\n...\\n\\n## Próximos Passos\\n..."
+  "nome_cliente": "Nome completo do cliente",
+  "item1_sobre_cliente": "Aqui coloque um texto detalhado sobre o cliente, incluindo: Família & Pessoal, Negócios/Profissão, Fontes de Renda, Investimentos Atuais, Estilo de Vida, Objetivos Financeiros. Use subtítulos com ## e quebras de linha \\n\\n. Mínimo 500 caracteres.",
+  "item2_avaliacoes": "Aqui coloque a análise: Patrimônio e Alocação Atual, Capacidade de Aporte, Projeção de Crescimento. Use subtítulos com ## e quebras de linha. Mínimo 300 caracteres.",
+  "item3_recomendacoes": "Aqui coloque as recomendações: Gestão de Projetos de Vida, Construção de Renda Passiva, Alocação Estratégica Sugerida, Próximos Passos. Use subtítulos com ## e quebras de linha. Mínimo 400 caracteres."
 }
 
-Anamnese: ${anamnese}`;
+ANAMNESE:
+${anamnese}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }], 
-        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } 
+        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 } 
       })
     });
     
@@ -280,11 +307,17 @@ Anamnese: ${anamnese}`;
     let rawText = data.candidates[0].content.parts[0].text;
     console.log('Raw text:', rawText);
     
-    let jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado');
+    // Extrair JSON usando função robusta
+    let dados = extractJSON(rawText);
     
-    ultimoJson = JSON.parse(jsonMatch[0]);
+    if (!dados) {
+      // Se ainda não conseguiu, tenta criar um JSON manualmente a partir do texto
+      throw new Error('Não foi possível extrair o JSON da resposta. Tente novamente.');
+    }
     
+    ultimoJson = dados;
+    
+    // Garantir campos
     ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
     ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
     ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
@@ -298,7 +331,7 @@ Anamnese: ${anamnese}`;
     `;
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado!', 'ok');
+    setStatus('✅ IPS gerado com sucesso!', 'ok');
     
   } catch(error) {
     console.error('Erro:', error);
