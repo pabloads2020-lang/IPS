@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerador de IPS · Pleno Gestão de Investimentos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
 <style>
@@ -126,7 +125,6 @@ textarea:focus { border-color: var(--gold); outline: none; }
     <div class="card">
       <div class="card-title">✏️ Edite o conteúdo gerado</div>
       <div id="editaveisContainer"></div>
-      <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
       <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
     </div>
   </div>
@@ -135,46 +133,46 @@ textarea:focus { border-color: var(--gold); outline: none; }
 <footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta DOCX profissional</footer>
 
 <script>
-const TEXTO_FIXO_ITEM4 = `# Análise, Seleção e Monitoramento de Ativos
+const TEXTO_FIXO_ITEM4 = `ANÁLISE, SELEÇÃO E MONITORAMENTO DE ATIVOS
 
 O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.
 
-## Títulos Públicos:
+TÍTULOS PÚBLICOS:
 Analisamos o duration e eventuais distorções entre o valor de mercado e as projeções do cenário-base, buscando oportunidades de reprecificação em títulos prefixados e indexados. Já para a parcela pós-fixada, a alocação é dimensionada estrategicamente para atender aos objetivos de liquidez da carteira.
 
-## Títulos Privados:
+TÍTULOS PRIVADOS:
 Validamos o rating do emissor através de uma análise própria baseada nos 5 C's do crédito e em testes de estresse para cenários adversos. A seleção final prioriza a melhor relação risco-retorno, considerando duration, liquidez e eficiência tributária, sempre em estrita conformidade com a Política de Investimento.
 
-## Cotas de Fundos:
+COTAS DE FUNDOS:
 A seleção de fundos integra análises qualitativas — focadas na experiência da equipe e no histórico da gestora sob estresse — e quantitativas, que utilizam os índices de Sharpe e Treynor para avaliar a eficiência.
 
-## Ações:
+AÇÕES:
 A seleção de ações combina análise fundamentalista — avaliando indicadores operacionais (como o ROE), múltiplos de mercado e forças competitivas — com análise técnica para a definição do timing de entrada.
 
-**Importante:** Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
+Importante: Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
 
-const TABELA_POLITICA = `# Política de Investimento
+const TABELA_POLITICA = `POLÍTICA DE INVESTIMENTO
 
-| Produto | Mínimo | Máximo |
-|---------|--------|--------|
-| Títulos Financeiros: CDB / Compromissada / LCI / LCA / LF sênior | 0,0% | 40,0% |
-| Emissor investment grade com prazo de até 3 anos | 0,0% | 10,0% |
-| Emissor non investment grade com prazo até 3 anos | 0,0% | 10,0% |
-| Emissor investment grade, acima de 3 anos | 0,0% | 10,0% |
-| Emissor non investment grade, acima de 3 anos | 0,0% | 10,0% |
-| LF subordinada e subordinada híbrida | 0,0% | 40,0% |
-| Títulos Públicos | 2,0% | 100,0% |
-| LFT | 2,0% | 90,0% |
-| Títulos não financeiros: Debêntures / CRI / CRA etc | 0,0% | 40,0% |
-| Ações e Commodities | 10,0% | 80,0% |
-| Ações | 10,0% | 50,0% |
-| Ouro | 0,0% | 30,0% |
-| Derivativos Listados em Bolsa | 0,0% | 10,0% |
-| COE | 0,0% | 20,0% |
-| Fundos Estruturados | 0,0% | 20,0% |
-| FIP | 0,0% | 20,0% |
-| FII de incorporação | 0,0% | 20,0% |
-| Outros FIIs | 0,0% | 20,0% |`;
+Produto                                        | Mínimo | Máximo
+------------------------------------------------|--------|--------
+Títulos Financeiros: CDB / Compromissada / LCI | 0,0%   | 40,0%
+Emissor investment grade com prazo até 3 anos  | 0,0%   | 10,0%
+Emissor non investment grade até 3 anos        | 0,0%   | 10,0%
+Emissor investment grade acima de 3 anos       | 0,0%   | 10,0%
+Emissor non investment grade acima de 3 anos   | 0,0%   | 10,0%
+LF subordinada e subordinada híbrida           | 0,0%   | 40,0%
+Títulos Públicos                               | 2,0%   | 100,0%
+LFT                                            | 2,0%   | 90,0%
+Debêntures / CRI / CRA                         | 0,0%   | 40,0%
+Ações e Commodities                            | 10,0%  | 80,0%
+Ações                                          | 10,0%  | 50,0%
+Ouro                                           | 0,0%   | 30,0%
+Derivativos Listados em Bolsa                  | 0,0%   | 10,0%
+COE                                            | 0,0%   | 20,0%
+Fundos Estruturados                            | 0,0%   | 20,0%
+FIP                                            | 0,0%   | 20,0%
+FII de incorporação                            | 0,0%   | 20,0%
+Outros FIIs                                    | 0,0%   | 20,0%`;
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
@@ -231,14 +229,12 @@ function updateApiStatus() {
 updateApiStatus();
 
 let ultimoJson = null;
-let chart = null;
 
 // Limpar
 document.getElementById('btnLimpar').onclick = () => {
   document.getElementById('anamneseInput').value = '';
   document.getElementById('resultArea').style.display = 'none';
   document.getElementById('statusMsg').classList.remove('show');
-  if(chart) { chart.destroy(); chart = null; }
   ultimoJson = null;
   setStatus('🧹 Pronto para novo cliente', 'ok');
 };
@@ -260,13 +256,7 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   "nome_cliente": "Nome do Cliente",
   "item1_sobre_cliente": "## Família & Pessoal\\n...\\n\\n## Negócios\\n...\\n\\n## Fontes de Renda\\n...\\n\\n## Investimentos Atuais\\n...\\n\\n## Estilo de Vida\\n...\\n\\n## Objetivos\\n...",
   "item2_avaliacoes": "## Patrimônio\\n...\\n\\n## Capacidade de Aporte\\n...\\n\\n## Projeção\\n...",
-  "item3_recomendacoes": "## Gestão de Projetos\\n...\\n\\n## Renda Passiva\\n...\\n\\n## Alocação Estratégica\\n...\\n\\n## Próximos Passos\\n...",
-  "patrimonio": 0,
-  "renda_mensal": 0,
-  "aporte_mensal": 5000,
-  "periodo_anos": 30,
-  "retorno_bruto": 9.5,
-  "inflacao": 4.5
+  "item3_recomendacoes": "## Gestão de Projetos\\n...\\n\\n## Renda Passiva\\n...\\n\\n## Alocação Estratégica\\n...\\n\\n## Próximos Passos\\n..."
 }
 
 Anamnese: ${anamnese}`;
@@ -298,11 +288,6 @@ Anamnese: ${anamnese}`;
     ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
     ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
     ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || '## Gestão de Projetos\nInformações não disponíveis.\n\n## Renda Passiva\nInformações não disponíveis.\n\n## Alocação\nInformações não disponíveis.\n\n## Próximos Passos\nInformações não disponíveis.';
-    ultimoJson.aporte_mensal = ultimoJson.aporte_mensal || 5000;
-    ultimoJson.periodo_anos = ultimoJson.periodo_anos || 30;
-    ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
-    ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
-    ultimoJson.patrimonio = ultimoJson.patrimonio || 0;
     
     document.getElementById('editaveisContainer').innerHTML = `
       <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(ultimoJson.nome_cliente)}"></div>
@@ -310,53 +295,6 @@ Anamnese: ${anamnese}`;
       <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="16">${escapeHtml(ultimoJson.item2_avaliacoes)}</textarea></div>
       <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="20">${escapeHtml(ultimoJson.item3_recomendacoes)}</textarea></div>
     `;
-    
-    // Gráfico
-    const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
-    const anos = parseInt(ultimoJson.periodo_anos) || 30;
-    const retorno = parseFloat(ultimoJson.retorno_bruto) / 100 || 0.095;
-    const inflacao = parseFloat(ultimoJson.inflacao) / 100 || 0.045;
-    const txReal = (1+retorno)/(1+inflacao)-1;
-    let saldo = parseFloat(ultimoJson.patrimonio) || 0;
-    const labels = [];
-    const dados = [];
-    
-    for(let i = 0; i <= anos; i++) {
-      labels.push(i);
-      if(i === 0) {
-        dados.push(saldo);
-      } else {
-        saldo = (saldo + aporte * 12) * (1 + txReal);
-        dados.push(Math.round(saldo));
-      }
-    }
-    
-    const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
-    if(chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: { 
-        labels: labels, 
-        datasets: [{ 
-          label: 'Patrimônio Projetado (R$)', 
-          data: dados, 
-          borderColor: '#f5c842', 
-          tension: 0.3, 
-          fill: false, 
-          borderWidth: 3 
-        }] 
-      },
-      options: { 
-        responsive: true, 
-        plugins: { 
-          tooltip: { 
-            callbacks: { 
-              label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` 
-            } 
-          } 
-        } 
-      }
-    });
     
     document.getElementById('resultArea').style.display = 'block';
     setStatus('✅ IPS gerado!', 'ok');
@@ -369,7 +307,7 @@ Anamnese: ${anamnese}`;
   }
 };
 
-// EXPORTAR DOCX - VERSÃO SIMPLIFICADA E GARANTIDA
+// EXPORTAR DOCX - VERSÃO SIMPLIFICADA
 document.getElementById('btnExportarDOCX').onclick = async () => {
   if(!ultimoJson) { 
     setStatus('❌ Nenhum IPS gerado', 'err'); 
@@ -379,15 +317,15 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
   setOverlay(true, 'Gerando DOCX...');
   
   try {
+    // Verificar se a biblioteca docx está disponível
+    if (typeof docx === 'undefined') {
+      throw new Error('Biblioteca DOCX não carregou. Recarregue a página e tente novamente.');
+    }
+    
     const nome = document.getElementById('editNome')?.value || 'Cliente';
     const dataAtual = new Date().toLocaleDateString('pt-BR');
     
-    // Capturar imagem do gráfico
-    const canvas = document.getElementById('graficoPatrimonio');
-    const imagemBase64 = canvas.toDataURL('image/png');
-    const imagemBuffer = await (await fetch(imagemBase64)).arrayBuffer();
-    
-    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } = docx;
+    const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
     
     // Criar documento
     const doc = new Document({
@@ -436,18 +374,6 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
           }),
           new Paragraph({
             children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })]
-          }),
-          new Paragraph({ children: [] }),
-          
-          // Gráfico
-          new Paragraph({
-            children: [new TextRun({ text: "PROJEÇÃO PATRIMONIAL", bold: true, size: 28 })]
-          }),
-          new Paragraph({
-            children: [new ImageRun({ 
-              data: imagemBuffer, 
-              transformation: { width: 500, height: 300 } 
-            })]
           }),
           new Paragraph({ children: [] }),
           
