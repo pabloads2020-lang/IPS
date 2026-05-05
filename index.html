@@ -137,9 +137,44 @@ textarea:focus { border-color: var(--gold); outline: none; }
 <script>
 const TEXTO_FIXO_ITEM4 = `# Análise, Seleção e Monitoramento de Ativos
 
-O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica...`;
+O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.
 
-const TABELA_POLITICA = `# Política de Investimento\n\n| Produto | Mínimo | Máximo |\n|---------|--------|--------|\n| Títulos Financeiros | 0,0% | 40,0% |\n| Títulos Públicos | 2,0% | 100,0% |\n| Ações e Commodities | 10,0% | 80,0% |`;
+## Títulos Públicos:
+Analisamos o duration e eventuais distorções entre o valor de mercado e as projeções do cenário-base, buscando oportunidades de reprecificação em títulos prefixados e indexados. Já para a parcela pós-fixada, a alocação é dimensionada estrategicamente para atender aos objetivos de liquidez da carteira.
+
+## Títulos Privados:
+Validamos o rating do emissor através de uma análise própria baseada nos 5 C's do crédito e em testes de estresse para cenários adversos. A seleção final prioriza a melhor relação risco-retorno, considerando duration, liquidez e eficiência tributária, sempre em estrita conformidade com a Política de Investimento.
+
+## Cotas de Fundos:
+A seleção de fundos integra análises qualitativas — focadas na experiência da equipe e no histórico da gestora sob estresse — e quantitativas, que utilizam os índices de Sharpe e Treynor para avaliar a eficiência.
+
+## Ações:
+A seleção de ações combina análise fundamentalista — avaliando indicadores operacionais (como o ROE), múltiplos de mercado e forças competitivas — com análise técnica para a definição do timing de entrada.
+
+**Importante:** Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
+
+const TABELA_POLITICA = `# Política de Investimento
+
+| Produto | Mínimo | Máximo |
+|---------|--------|--------|
+| Títulos Financeiros: CDB / Compromissada / LCI / LCA / LF sênior | 0,0% | 40,0% |
+| Emissor investment grade com prazo de até 3 anos | 0,0% | 10,0% |
+| Emissor non investment grade com prazo até 3 anos | 0,0% | 10,0% |
+| Emissor investment grade, acima de 3 anos | 0,0% | 10,0% |
+| Emissor non investment grade, acima de 3 anos | 0,0% | 10,0% |
+| LF subordinada e subordinada híbrida | 0,0% | 40,0% |
+| Títulos Públicos | 2,0% | 100,0% |
+| LFT | 2,0% | 90,0% |
+| Títulos não financeiros: Debêntures / CRI / CRA etc | 0,0% | 40,0% |
+| Ações e Commodities | 10,0% | 80,0% |
+| Ações | 10,0% | 50,0% |
+| Ouro | 0,0% | 30,0% |
+| Derivativos Listados em Bolsa | 0,0% | 10,0% |
+| COE | 0,0% | 20,0% |
+| Fundos Estruturados | 0,0% | 50,0% |
+| FIP | 0,0% | 20,0% |
+| FII de incorporação | 0,0% | 20,0% |
+| Outros FIIs | 0,0% | 20,0% |`;
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
@@ -181,16 +216,67 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   const apiKey = getApiKey();
   if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
   if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
-  setOverlay(true, 'IA analisando...');
+  setOverlay(true, 'IA analisando (Gemini 2.5 Flash)...');
   try {
-    const prompt = `Você é um planejador financeiro sênior. Gere um IPS completo e detalhado.
+    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
 
-Retorne SOMENTE UM JSON válido, sem texto adicional, com estes campos:
+ATENÇÃO: Gere um IPS COMPLETO e EXTREMAMENTE DETALHADO, seguindo EXATAMENTE a estrutura abaixo com TODOS os subtópicos. NÃO resumo. CADA subtópico deve ter no mínimo 3 parágrafos.
+
+ESTRUTURA OBRIGATÓRIA:
+
+# Sobre o Cliente
+
+## Família & Pessoal
+(detalhe: idade, estado civil, filhos, cidade, formação, estilo de vida)
+
+## Negócios / Profissão
+(detalhe: profissão, tempo de atuação, especialidade, vínculos)
+
+## Fontes de Renda
+(detalhe: renda mensal total, composição, previsibilidade)
+
+## Investimentos Atuais
+(detalhe: patrimônio financeiro, alocação por classe de ativo)
+
+## Estilo de Vida & Custo
+(detalhe: custo de vida mensal, principais despesas)
+
+## Objetivos Financeiros
+(detalhe: objetivos de curto, médio e longo prazo)
+
+# Avaliações
+
+## Patrimônio e Alocação Atual
+(detalhe: valor do patrimônio, distribuição percentual)
+
+## Capacidade de Aporte
+(detalhe: renda menos despesas = capacidade de aporte mensal)
+
+## Projeção de Crescimento Patrimonial
+(detalhe: projeção considerando aporte, prazo, rentabilidade e inflação)
+
+# Recomendações Estratégicas
+
+## Gestão de Projetos de Vida
+(detalhe: alinhamento dos objetivos com o planejamento financeiro)
+
+## Construção de Renda Passiva
+(detalhe: estratégias para gerar renda passiva)
+
+## Alocação Estratégica Sugerida
+(detalhe: sugestão de alocação por classe de ativo com percentuais)
+
+## Próximos Passos
+(detalhe: ações imediatas e de curto prazo)
+
+Agora, com base na anamnese abaixo, gere o IPS COMPLETO seguindo ESTRITAMENTE a estrutura acima.
+
+Após gerar os textos, retorne UM JSON válido (sem texto antes ou depois) com os campos:
 {
   "nome_cliente": "Nome completo",
-  "item1_sobre_cliente": "Texto com ## Família, ## Profissão, ## Renda, ## Investimentos, ## Objetivos (mínimo 500 caracteres)",
-  "item2_avaliacoes": "Texto com análise patrimonial e capacidade de aporte (mínimo 300 caracteres)",
-  "item3_recomendacoes": "Texto com recomendações estratégicas (mínimo 400 caracteres)",
+  "item1_sobre_cliente": "texto completo da seção # Sobre o Cliente com todos os subtópicos",
+  "item2_avaliacoes": "texto completo da seção # Avaliações com todos os subtópicos",
+  "item3_recomendacoes": "texto completo da seção # Recomendações Estratégicas com todos os subtópicos",
   "patrimonio": 0,
   "renda_mensal": 0,
   "aporte_mensal": 0,
@@ -199,39 +285,34 @@ Retorne SOMENTE UM JSON válido, sem texto adicional, com estes campos:
   "inflacao": 4.5
 }
 
-Anamnese: ${anamnese}`;
+ANAMNESE:
+${anamnese}`;
 
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
     });
     
     const data = await resposta.json();
     console.log('Resposta API:', data);
     
-    // Verificação de erro da API
-    if (data.error) {
-      throw new Error(`API Error: ${data.error.message}`);
-    }
-    
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('API não retornou conteúdo válido. Verifique sua chave.');
-    }
+    if (data.error) throw new Error(data.error.message);
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) throw new Error('API não retornou conteúdo');
     
     const texto = data.candidates[0].content.parts[0].text;
     console.log('Texto bruto:', texto);
     
     const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
+    if (!jsonMatch) throw new Error('JSON não encontrado');
     
     ultimoJson = JSON.parse(jsonMatch[0]);
     
-    // Fallback para campos vazios
+    // Fallback
     ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
-    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família\nInformações não disponíveis.\n\n## Profissão\nInformações não disponíveis.\n\n## Renda\nInformações não disponíveis.\n\n## Investimentos\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
-    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || 'Análise patrimonial não disponível.';
-    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || 'Recomendações não disponíveis.';
+    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
+    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
+    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || '## Gestão de Projetos\nInformações não disponíveis.\n\n## Renda Passiva\nInformações não disponíveis.\n\n## Alocação\nInformações não disponíveis.\n\n## Próximos Passos\nInformações não disponíveis.';
     ultimoJson.aporte_mensal = ultimoJson.aporte_mensal || 5000;
     ultimoJson.periodo_anos = ultimoJson.periodo_anos || 30;
     ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
@@ -239,9 +320,9 @@ Anamnese: ${anamnese}`;
     
     document.getElementById('editaveisContainer').innerHTML = `
       <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
-      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
-      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="10">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="20">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
+      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="16">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="20">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
     `;
     
     // Gráfico
@@ -266,7 +347,7 @@ Anamnese: ${anamnese}`;
     });
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado!', 'ok');
+    setStatus('✅ IPS gerado com estrutura tópico a tópico!', 'ok');
   } catch (error) {
     console.error('Erro:', error);
     setStatus(`❌ ${error.message}`, 'err');
@@ -294,7 +375,7 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: nome, bold: true, size: 32 })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32 })] }),
-          new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste.", size: 24 })] }),
+          new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.", size: 24 })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32 })] }),
           new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })] }),
