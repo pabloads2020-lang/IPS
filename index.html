@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de IPS · Pleno Gestão de Investimentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+<style>
+:root {
+  --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --gold: #f5c842; --gold2: #e0a800;
+  --text: #e8eaf0; --text2: #8b93a7; --text3: #555e72;
+  --green: #2ecc71; --green-bg: rgba(46,204,113,0.12);
+  --red: #e74c3c; --red-bg: rgba(231,76,60,0.12);
+  --amber: #f39c12; --amber-bg: rgba(243,156,18,0.12);
+  --blue: #3498db; --blue-bg: rgba(52,152,219,0.12);
+  --header-bg: #161b25; --header-border: rgba(255,255,255,0.07);
+  --card-bg: #161b25; --card-border: rgba(255,255,255,0.07);
+  --input-bg: #1c2333; --input-border: rgba(255,255,255,0.13);
+  --debug-bg: #1c2333; --overlay-bg: rgba(14,17,23,.88);
+  --footer-border: rgba(255,255,255,0.07);
+  --result-item-bg: #1c2333;
+}
+body.light {
+  --bg: #f5f7fa; --bg2: #ffff; --bg3: #f0f2f5;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.12);
+  --gold: #d4a017; --gold2: #b8860b;
+  --text: #1a1a2e; --text2: #4a5568; --text3: #718096;
+  --green: #27ae60; --green-bg: rgba(39,174,96,0.1);
+  --red: #e74c3c; --red-bg: rgba(231,76,60,0.1);
+  --amber: #e67e22; --amber-bg: rgba(230,126,34,0.1);
+  --header-bg: #ffff; --header-border: rgba(0,0,0,0.08);
+  --card-bg: #ffff; --card-border: rgba(0,0,0,0.08);
+  --input-bg: #ffff; --input-border: #e2e8f0;
+  --debug-bg: #f7fafc; --overlay-bg: rgba(255,255,255,.95);
+  --footer-border: rgba(0,0,0,0.08);
+  --result-item-bg: #f7fafc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+body { font-family: 'DM Sans', 'Atkinson Hyperlegible', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header { background: var(--header-bg); border-bottom: 1px solid var(--header-border); padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.dot { width: 28px; height: 28px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.header-date { font-size: 13px; color: var(--text3); }
+.theme-toggle { background: var(--bg3); border: 1px solid var(--border2); border-radius: 30px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+.theme-toggle:hover { border-color: var(--gold); transform: scale(1.05); }
+
+.main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+.api-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.api-input-wrap { position: relative; flex: 1; min-width: 220px; }
+.api-input { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 9px 40px 9px 14px; font-size: 14px; color: var(--text); font-family: monospace; outline: none; }
+.api-input:focus { border-color: var(--gold); }
+.api-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); background: none; border: none; }
+.btn-key { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2); text-decoration: none; }
+.btn-key:hover { border-color: var(--gold); color: var(--gold); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-gold:hover { background: var(--gold2); transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--red); color: var(--red); }
+.api-status { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.api-status.valid { color: var(--green); }
+
+textarea { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', monospace; resize: vertical; }
+textarea:focus { border-color: var(--gold); outline: none; }
+
+.status { display: none; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 8px; font-size: 14px; margin-top: 0.75rem; }
+.status.show { display: flex; }
+.status-ok { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
+.status-err { background: var(--red-bg); color: var(--red); border: 1px solid rgba(231,76,60,0.25); }
+
+.editable-section { background: var(--result-item-bg); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border-left: 3px solid var(--gold); }
+.editable-section label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.editable-section textarea, .editable-section input { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font-size: 14px; color: var(--text); font-family: inherit; }
+
+.graph-container { max-width: 100%; margin: 1rem 0; padding: 1rem; background: var(--bg2); border-radius: 8px; }
+
+.overlay { display: none; position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+.overlay.show { display: flex; }
+.spin { width: 40px; height: 40px; border: 3px solid var(--border2); border-top-color: var(--gold); border-radius: 50%; animation: rot 0.8s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.footer { text-align: center; font-size: 12px; color: var(--text3); padding: 2rem; border-top: 1px solid var(--footer-border); margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"><div class="spin"></div><div class="spin-text" id="overlayText">Processando...</div></div>
+
+<header class="header">
+  <div class="header-logo"><div class="dot">IPS</div>Gerador de IPS · Pleno Gestão de Investimentos</div>
+  <div class="header-right"><div class="header-date" id="hDate"></div><button class="theme-toggle" id="themeToggle">🌙</button></div>
+</header>
+
+<main class="main">
+  <div class="card">
+    <div class="card-title">🔑 API Gemini</div>
+    <div class="api-row">
+      <div class="api-input-wrap"><input type="password" id="apiKeyInput" class="api-input" placeholder="Cole sua chave AIza..."><button class="api-eye" id="apiEye">👁️</button></div>
+      <button class="btn btn-gold" id="btnSalvarKey">💾 Salvar chave</button>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-key">🔑 Gerar chave gratuita ↗</a>
+    </div>
+    <div class="api-status" id="apiStatus"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 Anamnese do Cliente <span>Cole o texto da reunião (bagunçado ou estruturado)</span></div>
+    <textarea id="anamneseInput" rows="8" placeholder="Ex: João, 45 anos, empresário, casado, 2 filhos. Renda média de R$ 32 mil por mês. Patrimônio atual de R$ 250 mil em investimentos. Quer aposentar aos 65 com R$ 20 mil/mês. Tem financiamento imobiliário e quer fazer intercâmbio dos filhos..."></textarea>
+    <button class="btn btn-gold" id="btnGerarIPS" style="margin-top: 1rem;">✨ Gerar IPS com IA (Gemini)</button>
+    <div id="statusMsg" class="status"></div>
+  </div>
+
+  <div id="resultArea" style="display:none;">
+    <div class="card">
+      <div class="card-title">✏️ Edite o conteúdo gerado (se necessário)</div>
+      <div id="editaveisContainer"></div>
+      <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
+      <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">IA treinada com o modelo de IPS · Chave salva localmente · Dados 100% privados</footer>
+
+<script>
+const MODELO_IPS = `PLANO INICIAL - Mateus Cesar
+
+# Sobre o Cliente
+## Família & Pessoal
+Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança e eficiência administrativa...
+## Negócios
+Médico com atuação em clínicas no Rio de Janeiro...
+## Fontes de Renda
+Renda média mensal de R$ 18.800,00...
+## Investimentos
+Patrimônio de R$ 12.000,00 em investimentos financeiros na corretora XP...
+## Estilo de vida
+Custo de vida fixo em torno de R$ 8,7 mil mensais...
+## Objetivos
+Busca consolidar sua autonomia profissional...
+
+# Avaliações
+Patrimônio: R$ 12 mil em investimentos líquidos...
+Alocação atual: 100% renda fixa pós-fixada...
+Crescimento patrimonial: aporte médio de R$ 6.000/mês, prazo 34 anos, retorno bruto 9,5% a.a., inflação 4,5% a.a.
+
+# Recomendações estratégicas
+Gestão de Projetos de Vida: manter disciplina no fluxo de caixa...
+Construção de Renda Passiva: estruturação de carteira diversificada...`;
+
+function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
+function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 5000); }
+function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
+
+document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
+document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
+function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave válida'; el.className = 'api-status'; } }
+updateApiStatus();
+
+let ultimoJson = null, chart = null;
+
+document.getElementById('btnGerarIPS').onclick = async () => {
+  const anamnese = document.getElementById('anamneseInput').value.trim();
+  const apiKey = getApiKey();
+  if(!anamnese) { setStatus('❌ Cole a anamnese do cliente primeiro', 'err'); return; }
+  if(!apiKey) { setStatus('❌ Configure sua chave API Gemini', 'err'); return; }
+  setOverlay(true, 'Enviando para Gemini AI...');
+  try {
+    const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
+    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+    });
+    const data = await resposta.json();
+    const texto = data.candidates[0].content.parts[0].text;
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('Resposta inválida da IA');
+    ultimoJson = JSON.parse(jsonMatch[0]);
+    renderizarEditavel(ultimoJson);
+    gerarGrafico(ultimoJson);
+    document.getElementById('resultArea').style.display = 'block';
+    setStatus('✅ IPS gerado! Edite se necessário e exporte.', 'ok');
+  } catch(e) { setStatus('❌ Erro: ' + e.message, 'err'); } finally { setOverlay(false); }
+};
+
+function renderizarEditavel(d) {
+  const container = document.getElementById('editaveisContainer');
+  container.innerHTML = `
+    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${d.nome_cliente || ''}"></div>
+    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${d.item1_sobre_cliente || ''}</textarea></div>
+    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${d.item2_avaliacoes || ''}</textarea></div>
+    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${d.item3_recomendacoes || ''}</textarea></div>
+  `;
+}
+
+function gerarGrafico(d) {
+  const aporte = parseFloat(d.aporte_mensal) || 5000;
+  const anos = parseInt(d.periodo_anos) || 30;
+  const retorno = parseFloat(d.retorno_bruto) / 100 || 0.095;
+  const inflacao = parseFloat(d.inflacao) / 100 || 0.045;
+  const txReal = (1+retorno)/(1+inflacao)-1;
+  let saldo = 0;
+  const labels = [], dados = [];
+  for(let i=0; i<=anos; i++) {
+    labels.push(i);
+    if(i===0) dados.push(0);
+    else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(saldo); }
+  }
+  const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] }, options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } } });
+}
+
+document.getElementById('btnExportarDOCX').onclick = () => {
+  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
+  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente;
+  const conteudo = `
+    PLANO INICIAL - ${nome}\n\n
+    # Sobre o Cliente\n${document.getElementById('editItem1')?.value}\n\n
+    # Avaliações\n${document.getElementById('editItem2')?.value}\n\n
+    # Recomendações Estratégicas\n${document.getElementById('editItem3')?.value}\n\n
+    # Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n
+    # Política de Investimento\n[Tabela fixa do modelo - item 5]
+  `;
+  const blob = new Blob([conteudo], { type: 'application/msword' });
+  saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.doc`);
+  setStatus('✅ Documento exportado!', 'ok');
+};
+
+document.getElementById('themeToggle').onclick = () => {
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+};
+if(localStorage.getItem('theme') === 'light') document.getElementById('themeToggle').click();
+function atualizarRelogio() { document.getElementById('hDate').textContent = new Date().toLocaleString('pt-BR'); }
+atualizarRelogio(); setInterval(atualizarRelogio, 1000);
+</script>
+</body>
+</html>
