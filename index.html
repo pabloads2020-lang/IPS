@@ -65,12 +65,14 @@ body { font-family: 'DM Sans', 'Atkinson Hyperlegible', sans-serif; background: 
 .btn-gold { background: var(--gold); color: #000; }
 .btn-gold:hover { background: var(--gold2); transform: translateY(-1px); }
 .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
-.btn-ghost:hover { border-color: var(--red); color: var(--red); }
+.btn-ghost:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
 .api-status { font-size: 12px; color: var(--text3); margin-top: 4px; }
 .api-status.valid { color: var(--green); }
 
 textarea { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', monospace; resize: vertical; }
 textarea:focus { border-color: var(--gold); outline: none; }
+
+.button-group { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
 
 .status { display: none; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 8px; font-size: 14px; margin-top: 0.75rem; }
 .status.show { display: flex; }
@@ -80,8 +82,6 @@ textarea:focus { border-color: var(--gold); outline: none; }
 .editable-section { background: var(--result-item-bg); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border-left: 3px solid var(--gold); }
 .editable-section label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
 .editable-section textarea, .editable-section input { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font-size: 14px; color: var(--text); font-family: inherit; }
-
-.graph-container { max-width: 100%; margin: 1rem 0; padding: 1rem; background: var(--bg2); border-radius: 8px; }
 
 .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
 .overlay.show { display: flex; }
@@ -114,7 +114,10 @@ textarea:focus { border-color: var(--gold); outline: none; }
   <div class="card">
     <div class="card-title">📝 Anamnese do Cliente <span>Cole o texto da reunião (bagunçado ou estruturado)</span></div>
     <textarea id="anamneseInput" rows="8" placeholder="Ex: João, 45 anos, empresário, casado, 2 filhos. Renda média de R$ 32 mil por mês. Patrimônio atual de R$ 250 mil em investimentos. Quer aposentar aos 65 com R$ 20 mil/mês. Tem financiamento imobiliário e quer fazer intercâmbio dos filhos..."></textarea>
-    <button class="btn btn-gold" id="btnGerarIPS" style="margin-top: 1rem;">✨ Gerar IPS com IA (Gemini)</button>
+    <div class="button-group">
+      <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
+      <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
+    </div>
     <div id="statusMsg" class="status"></div>
   </div>
 
@@ -160,12 +163,40 @@ function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
 function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
 
+// Função segura para escapar HTML (protegida contra null/undefined)
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  return s.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// Função segura para obter valor string
+function safeString(value, defaultValue = '') {
+  if (value === null || value === undefined) return defaultValue;
+  return String(value);
+}
+
 document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
 document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
 function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave válida'; el.className = 'api-status'; } }
 updateApiStatus();
 
 let ultimoJson = null, chart = null;
+
+// Botão Limpar
+document.getElementById('btnLimpar').onclick = () => {
+  document.getElementById('anamneseInput').value = '';
+  document.getElementById('resultArea').style.display = 'none';
+  document.getElementById('statusMsg').classList.remove('show');
+  if(chart) { chart.destroy(); chart = null; }
+  ultimoJson = null;
+  setStatus('🧹 Texto limpo. Pronto para nova anamnese.', 'ok');
+};
 
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
@@ -176,7 +207,6 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   try {
     const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido SEM formatação adicional, SEM markdown, apenas o JSON com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
 
-    // USANDO O MESMO MODELO QUE FUNCIONA NO SEU SITE DE FIIs
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -216,22 +246,13 @@ document.getElementById('btnGerarIPS').onclick = async () => {
 
 function renderizarEditavel(d) {
   const container = document.getElementById('editaveisContainer');
+  // Usando safeString para proteger contra valores nulos
   container.innerHTML = `
-    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(d.nome_cliente || '')}"></div>
-    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${escapeHtml(d.item1_sobre_cliente || '')}</textarea></div>
-    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${escapeHtml(d.item2_avaliacoes || '')}</textarea></div>
-    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${escapeHtml(d.item3_recomendacoes || '')}</textarea></div>
+    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(safeString(d.nome_cliente))}"></div>
+    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${escapeHtml(safeString(d.item1_sobre_cliente))}</textarea></div>
+    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(d.item2_avaliacoes))}</textarea></div>
+    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(d.item3_recomendacoes))}</textarea></div>
   `;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
 }
 
 function gerarGrafico(d) {
@@ -258,8 +279,12 @@ function gerarGrafico(d) {
 
 document.getElementById('btnExportarDOCX').onclick = () => {
   if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
-  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
-  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${document.getElementById('editItem1')?.value || ''}\n\n# Avaliações\n${document.getElementById('editItem2')?.value || ''}\n\n# Recomendações Estratégicas\n${document.getElementById('editItem3')?.value || ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
+  const nomeInput = document.getElementById('editNome');
+  const nome = nomeInput ? nomeInput.value : (ultimoJson.nome_cliente || 'Cliente');
+  const item1Input = document.getElementById('editItem1');
+  const item2Input = document.getElementById('editItem2');
+  const item3Input = document.getElementById('editItem3');
+  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${item1Input ? item1Input.value : ''}\n\n# Avaliações\n${item2Input ? item2Input.value : ''}\n\n# Recomendações Estratégicas\n${item3Input ? item3Input.value : ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
   const blob = new Blob([conteudo], { type: 'application/msword' });
   saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.doc`);
   setStatus('✅ Documento exportado!', 'ok');
