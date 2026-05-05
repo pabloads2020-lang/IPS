@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de IPS · Pleno Gestão</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas Essenciais -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+
     <style>
         :root { --bg:#0e1117; --card:#161b25; --input:#1c2333; --border:rgba(255,255,255,0.1); --text:#e8eaf0; --gold:#f5c842; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,14 +25,10 @@
         button:hover { opacity: 0.9; transform: translateY(-1px); }
         button.sec { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
         
-        #loginArea { display: flex; flex-direction: column; align-items: center; justify-align: center; height: 80vh; }
+        #loginArea { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; width: 100%; }
         #mainApp { display: none; width: 100%; max-width: 900px; }
         
         .status { padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; display: none; }
-        .status.show { display: block; }
-        .status-err { background: rgba(255, 71, 71, 0.1); color: #ff4747; border: 1px solid #ff4747; }
-        .status-ok { background: rgba(71, 255, 126, 0.1); color: #47ff7e; border: 1px solid #47ff7e; }
-
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
         .overlay.show { display: flex; }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -37,7 +36,7 @@
 
         #debugLogOutput { background: #000; color: #0f0; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; display: none; margin-top: 10px; border: 1px solid #333; }
         .editable-section { margin-top: 1.5rem; }
-        .editable-section label { display: block; margin-bottom: 6px; color: var(--gold); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .editable-section label { display: block; margin-bottom: 6px; color: var(--gold); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
 
         @media (max-width: 600px) { body { padding: 1rem; } .header-info { flex-direction: column; gap: 5px; } }
     </style>
@@ -45,10 +44,10 @@
 <body>
 
 <div id="loginArea">
-    <div class="card" style="text-align: center;">
+    <div class="card" style="text-align: center; max-width: 400px;">
         <h2>Acesso Restrito</h2>
         <input type="password" id="senhaInput" placeholder="Digite a senha...">
-        <button onclick="verificarSenha()">Entrar</button>
+        <button onclick="verificarSenha()" style="width: 100%;">Entrar</button>
     </div>
 </div>
 
@@ -62,7 +61,7 @@
         <h3>1. Configurações</h3>
         <input type="password" id="apiKeyInput" placeholder="Sua Gemini API Key">
         <button onclick="salvarKey()">Salvar Chave</button>
-        <button class="sec" onclick="document.getElementById('debugLogOutput').style.display='block'">📋 Mostrar Debug</button>
+        <button class="sec" onclick="alternarDebug()">📋 Log Debug</button>
         <pre id="debugLogOutput"></pre>
     </div>
 
@@ -71,7 +70,6 @@
         <textarea id="anamneseInput" rows="6" placeholder="Cole aqui os dados brutos da reunião..."></textarea>
         <button onclick="gerarIPS()">✨ Processar com IA</button>
         <button class="sec" onclick="document.getElementById('anamneseInput').value=''">Limpar</button>
-        <div id="statusMsg" class="status"></div>
     </div>
 
     <div id="resultArea" style="display: none;">
@@ -90,24 +88,26 @@
 </div>
 
 <script>
-// --- CONFIGURAÇÕES E TEXTOS FIXOS ---
 const SENHA_CORRETA = "pleno2024"; 
 const TEXTO_INTRODUCAO = "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.\n\nNossa metodologia integra gestão e planejamento em um processo contínuo de análise, seleção e monitoramento de ativos. Tudo começa com um planejamento financeiro que entrega uma visão 360° da sua realidade, partindo de um diagnóstico detalhado sobre ativos, passivos e eficiência fiscal...";
-const TEXTO_FIXO_4 = "4. Análise, Seleção e Monitoramento de Ativos\n\nO processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão...";
-const TEXTO_FIXO_5 = "5. Política de Investimento\n\nO portfólio será gerido seguindo os limites de concentração por classe de ativos e perfis de risco estabelecidos para a estratégia do cliente, garantindo diversificação e proteção patrimonial.";
+const TEXTO_FIXO_4 = "O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão...";
+const TEXTO_FIXO_5 = "O portfólio será gerido seguindo os limites de concentração por classe de ativos e perfis de risco estabelecidos para a estratégia do cliente, garantindo diversificação e proteção patrimonial.";
 
 let ultimoJson = null;
 let chartInstance = null;
 let DEBUG_LOGS = [];
 
-// --- UTILITÁRIOS ---
 function debug(msg, obj = null) {
     const entry = `[${new Date().toLocaleTimeString()}] ${msg} ${obj ? JSON.stringify(obj) : ''}`;
     DEBUG_LOGS.push(entry);
     const out = document.getElementById('debugLogOutput');
     out.textContent = DEBUG_LOGS.join('\n');
     out.scrollTop = out.scrollHeight;
-    console.log(entry);
+}
+
+function alternarDebug() {
+    const d = document.getElementById('debugLogOutput');
+    d.style.display = d.style.display === 'block' ? 'none' : 'block';
 }
 
 function atualizarRelogio() {
@@ -118,19 +118,16 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 
 function verificarSenha() {
-    const input = document.getElementById('senhaInput').value;
-    if (input === SENHA_CORRETA) {
+    if (document.getElementById('senhaInput').value === SENHA_CORRETA) {
         document.getElementById('loginArea').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         atualizarRelogio();
-    } else {
-        alert("Senha incorreta!");
-    }
+    } else { alert("Senha incorreta!"); }
 }
 
 function salvarKey() {
     const key = document.getElementById('apiKeyInput').value.trim();
-    if (key) { localStorage.setItem('gemini_key', key); alert("Chave salva com sucesso!"); }
+    if (key) { localStorage.setItem('gemini_key', key); alert("Chave salva!"); }
 }
 
 window.onload = () => { 
@@ -138,32 +135,17 @@ window.onload = () => {
     if(k) document.getElementById('apiKeyInput').value = k; 
 };
 
-// --- LÓGICA IA ---
 async function gerarIPS() {
     const anamnese = document.getElementById('anamneseInput').value.trim();
     const key = localStorage.getItem('gemini_key');
-    
-    if(!anamnese) return alert("Cole a anamnese primeiro.");
-    if(!key) return alert("Configure a API Key.");
+    if(!anamnese || !key) return alert("Preencha a anamnese e a API Key.");
 
     document.getElementById('overlay').classList.add('show');
-    debug("Iniciando processamento IA...");
+    debug("Iniciando IA...");
 
-    const prompt = `Você é um assessor de investimentos sênior da Pleno Gestão. 
-    Analise a anamnese abaixo e preencha os tópicos 1, 2 e 3 do IPS.
-    IMPORTANTE: Os tópicos devem ter no mínimo 3 parágrafos explicativos cada um.
-    
-    Retorne APENAS um JSON puro (sem markdown) no seguinte formato:
-    {
-      "nome": "Nome do Cliente",
-      "t1": "Texto longo para Tópico 1 (Sobre o Cliente)",
-      "t2": "Texto longo para Tópico 2 (Avaliações)",
-      "t3": "Texto longo para Tópico 3 (Recomendações)",
-      "patr": 500000,
-      "aport": 5000,
-      "anos": 25
-    }
-    
+    const prompt = `Você é um assessor sênior da Pleno Gestão. Analise a anamnese e preencha o IPS.
+    Os tópicos t1, t2 e t3 devem ser profissionais e detalhados.
+    Retorne apenas JSON: {"nome": "...", "t1": "...", "t2": "...", "t3": "...", "patr": 500000, "aport": 5000, "anos": 20}
     ANAMNESE: ${anamnese}`;
 
     try {
@@ -171,50 +153,32 @@ async function gerarIPS() {
             method: 'POST',
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-
         const data = await response.json();
-        if(data.error) throw new Error(data.error.message);
-
-        let rawText = data.candidates[0].content.parts[0].text;
-        debug("Resposta bruta recebida", rawText.substring(0, 100));
-
+        const rawText = data.candidates[0].content.parts[0].text;
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if(!jsonMatch) throw new Error("JSON não encontrado na resposta");
-
         ultimoJson = JSON.parse(jsonMatch[0]);
         
         document.getElementById('editaveisContainer').innerHTML = `
             <div class="editable-section"><label>Nome do Cliente</label><input id="valNome" value="${ultimoJson.nome}"></div>
-            <div class="editable-section"><label>1. Sobre o Cliente</label><textarea id="valT1" rows="8">${ultimoJson.t1}</textarea></div>
-            <div class="editable-section"><label>2. Avaliações</label><textarea id="valT2" rows="8">${ultimoJson.t2}</textarea></div>
-            <div class="editable-section"><label>3. Recomendações Estratégicas</label><textarea id="valT3" rows="8">${ultimoJson.t3}</textarea></div>
+            <div class="editable-section"><label>1. Sobre o Cliente</label><textarea id="valT1" rows="6">${ultimoJson.t1}</textarea></div>
+            <div class="editable-section"><label>2. Avaliações</label><textarea id="valT2" rows="6">${ultimoJson.t2}</textarea></div>
+            <div class="editable-section"><label>3. Recomendações</label><textarea id="valT3" rows="6">${ultimoJson.t3}</textarea></div>
         `;
-
         criarGrafico(ultimoJson.patr, ultimoJson.aport, ultimoJson.anos);
         document.getElementById('resultArea').style.display = 'block';
-        debug("Sucesso no parse do JSON");
-
-    } catch (e) {
-        debug("ERRO IA", e.message);
-        alert("Erro na IA: " + e.message);
-    } finally {
-        document.getElementById('overlay').classList.remove('show');
-    }
+    } catch (e) { alert("Erro: " + e.message); }
+    finally { document.getElementById('overlay').classList.remove('show'); }
 }
 
 function criarGrafico(p, a, anos) {
     const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
     if(chartInstance) chartInstance.destroy();
-    
-    let labels = [];
-    let dados = [];
-    let curr = p;
+    let labels = []; let dados = []; let curr = p;
     for(let i=0; i<=anos; i++) {
         labels.push("Ano " + i);
         dados.push(Math.round(curr));
-        curr = (curr + (a * 12)) * 1.08; // 8% juros simples simulado
+        curr = (curr * 1.08) + (a * 12); // Capitalização anual + aportes
     }
-
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -225,34 +189,29 @@ function criarGrafico(p, a, anos) {
     });
 }
 
-// --- EXPORTAÇÃO DOCX ROBUSTA ---
 async function exportarDOCX() {
-    debug("Iniciando exportação DOCX...");
+    debug("Iniciando DOCX...");
     document.getElementById('overlay').classList.add('show');
     document.getElementById('overlayText').textContent = "Gerando Word...";
 
     try {
-        const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, HeadingLevel } = docx;
-
-        // Capturar Imagem do Gráfico
+        const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, HeadingLevel } = window.docx;
         const canvas = document.getElementById('graficoPatrimonio');
-        const imgBase64 = canvas.toDataURL('image/png');
-        const imgBuffer = await fetch(imgBase64).then(r => r.arrayBuffer());
+        const imgBuffer = await (await fetch(canvas.toDataURL('image/png'))).arrayBuffer();
 
-        const splitToParagraphs = (text) => {
-            return text.split('\n').filter(l => l.trim() !== "").map(line => new Paragraph({
-                children: [new TextRun({ text: line.trim(), size: 24 })],
-                spacing: { after: 200 }
-            }));
-        };
+        const splitToParagraphs = (text) => text.split('\n').filter(l => l.trim() !== "").map(line => new Paragraph({
+            children: [new TextRun({ text: line.trim(), size: 24 })],
+            spacing: { before: 120, after: 120 },
+            alignment: AlignmentType.JUSTIFIED
+        }));
 
         const doc = new Document({
             sections: [{
-                properties: {},
+                properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
                 children: [
                     new Paragraph({ text: "POLÍTICA DE INVESTIMENTO (IPS)", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-                    new Paragraph({ text: document.getElementById('valNome').value, bold: true, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
-
+                    new Paragraph({ text: document.getElementById('valNome').value.toUpperCase(), bold: true, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+                    
                     new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2 }),
                     ...splitToParagraphs(TEXTO_INTRODUCAO),
 
@@ -264,8 +223,7 @@ async function exportarDOCX() {
 
                     new Paragraph({
                         children: [ new ImageRun({ data: imgBuffer, transformation: { width: 550, height: 280 } }) ],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: 200, after: 200 }
+                        alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 }
                     }),
 
                     new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2 }),
@@ -282,17 +240,9 @@ async function exportarDOCX() {
 
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `IPS_${document.getElementById('valNome').value.replace(/\s+/g,'_')}.docx`);
-        debug("Exportação concluída com sucesso.");
-
-    } catch (e) {
-        debug("ERRO EXPORTAÇÃO", e.stack);
-        alert("Falha ao exportar: " + e.message);
-    } finally {
-        document.getElementById('overlay').classList.remove('show');
-        document.getElementById('overlayText').textContent = "Processando...";
-    }
+    } catch (e) { alert("Erro exportação: " + e.message); }
+    finally { document.getElementById('overlay').classList.remove('show'); }
 }
 </script>
-
 </body>
 </html>
