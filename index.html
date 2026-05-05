@@ -3,423 +3,216 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerador de IPS · Pleno Gestão de Investimentos</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Gerador de IPS · Pleno</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
 <style>
-/* (mantive seu CSS original — omitido aqui por brevidade no snippet) */
-/* Cole o CSS igual ao original aqui */
+  :root { --bg:#0e1117; --card:#161b25; --input:#1c2333; --border:rgba(255,255,255,0.1); --text:#e8eaf0; --gold:#f5c842; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 2rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  input, textarea { width: 100%; background: var(--input); border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--text); font-family: inherit; }
+  button { background: var(--gold); color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+  .editable-section { margin-bottom: 1rem; }
+  .editable-section label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--gold); }
+  #resultArea { display: none; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; flex-direction: column; }
+  .overlay.show { display: flex; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<!-- (mantive o HTML original das seções, inputs, botões e canvas) -->
-<div class="overlay" id="overlay"><div class="spin"></div><div class="spin-text" id="overlayText">Processando...</div></div>
 
-<header class="header">
-  <div class="header-logo"><div class="dot">IPS</div>Gerador de IPS · Pleno Gestão de Investimentos</div>
-  <div class="header-right"><div class="header-date" id="hDate"></div><button class="theme-toggle" id="themeToggle">🌙</button></div>
-</header>
+<div class="overlay" id="overlay"><div class="spinner"></div><div>Processando...</div></div>
 
-<main class="main">
+<div class="card">
+  <h3>🔑 API Key</h3>
+  <input type="password" id="apiKeyInput" placeholder="Cole sua chave AIza...">
+  <button onclick="salvarChave()">Salvar Chave</button>
+  <div id="statusKey"></div>
+</div>
+
+<div class="card">
+  <h3>📝 Anamnese do Cliente</h3>
+  <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião..."></textarea>
+  <button onclick="gerarIPS()">✨ Gerar IPS</button>
+  <button onclick="limpar()">🗑️ Limpar</button>
+  <div id="statusMsg"></div>
+</div>
+
+<div id="resultArea">
   <div class="card">
-    <div class="card-title">🔑 API Gemini</div>
-    <div class="api-row">
-      <div class="api-input-wrap"><input type="password" id="apiKeyInput" class="api-input" placeholder="Cole sua chave AIza..."><button class="api-eye" id="apiEye">👁️</button></div>
-      <button class="btn btn-gold" id="btnSalvarKey">💾 Salvar chave</button>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-key">🔑 Gerar chave gratuita ↗</a>
-    </div>
-    <div class="api-status" id="apiStatus"></div>
+    <h3>✏️ Conteúdo Gerado</h3>
+    <div id="editaveisContainer"></div>
+    <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
+    <button onclick="exportarDOCX()">📄 Exportar para DOCX</button>
   </div>
-
-  <div class="card">
-    <div class="card-title">📝 Anamnese do Cliente</div>
-    <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião com o cliente..."></textarea>
-    <div class="button-group">
-      <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
-      <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
-    </div>
-    <div id="statusMsg" class="status"></div>
-  </div>
-
-  <div id="resultArea" style="display:none;">
-    <div class="card">
-      <div class="card-title">✏️ Edite o conteúdo gerado</div>
-      <div id="editaveisContainer"></div>
-      <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
-      <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
-    </div>
-  </div>
-</main>
-
-<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta DOCX profissional</footer>
+</div>
 
 <script>
-/* CONSTANTES FIXAS (mantive seu TEXTO_FIXO_ITEM4 e TABELA_POLITICA) */
-const TEXTO_FIXO_ITEM4 = `# Análise, Seleção e Monitoramento de Ativos
+const TEXTO_INTRODUCAO = `Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.\n\nNossa metodologia integra gestão e planejamento em um processo contínuo de análise, seleção e monitoramento de ativos. Tudo começa com um planejamento financeiro que entrega uma visão 360° da sua realidade, partindo de um diagnóstico detalhado sobre ativos, passivos e eficiência fiscal. Esse cuidado se estende ao entendimento do seu perfil humano, alinhando cada estratégia aos seus objetivos e às aspirações da sua família. Por fim, a execução racional garante que todas as decisões sejam transparentes e baseadas estritamente em dados, mantendo o foco nos resultados e eliminando o peso das emoções.`;
 
-O processo de gestão de investimentos inicia-se ... (mantive seu texto completo aqui)`;
-const TABELA_POLITICA = `# Política de Investimento
+const TEXTO_FIXO_ITEM4 = `4. Análise, Seleção e Monitoramento de Ativos\n\nO processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.\n\nComplementarmente, realizamos análises microeconômicas e setoriais específicas para o mercado brasileiro, estabelecendo cenários-base que orientam a tomada de decisão. A alocação de ativos é estritamente guiada pela Política de Investimento (PI), respeitando sempre os limites de concentração e a necessidade de liquidez de cada classe. Esse fluxo assegura que a composição do portfólio esteja alinhada tanto às condições de mercado quanto às diretrizes de segurança e objetivos de cada investidor executando o seguinte processo:\n\nTítulos Públicos:\nAnalisamos o duration e eventuais distorções entre o valor de mercado e as projeções do cenário-base, buscando oportunidades de reprecificação em títulos prefixados e indexados. Já para a parcela pós-fixada, a alocação é dimensionada estrategicamente para atender aos objetivos de liquidez da carteira.\n\nTítulos Privados:\nValidamos o rating do emissor através de uma análise própria baseada nos 5 C’s do crédito e em testes de estresse para cenários adversos. A seleção final prioriza a melhor relação risco-retorno, considerando duration, liquidez e eficiência tributária, sempre em estrita conformidade com a Política de Investimento (PI).\n\nCotas de Fundos:\nA seleção de fundos integra análises qualitativas — focadas na experiência da equipe e no histórico da gestora sob estresse — e quantitativas, que utilizam os índices de Sharpe e Treynor para avaliar a eficiência. Além disso, monitoramos a correlação com o benchmark e a volatilidade das cotas para garantir o alinhamento estratégico.\n\nAções:\nA seleção de ações combina análise fundamentalista — avaliando indicadores operacionais (como o ROE), múltiplos de mercado e forças competitivas — com análise técnica para a definição do timing de entrada. A exposição final é rigorosamente calibrada conforme os limites de concentração estabelecidos na Política de Investimento (PI).\n\nImportante: Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
 
-| Produto | Mínimo | Máximo |
-|---------|--------|--------|
-... (mantive sua tabela completa aqui)`;
-
-function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
-function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
-function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
-
-function safeString(value, defaultValue = '') {
-  if (value === null || value === undefined) return defaultValue;
-  return String(value);
-}
-
-document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
-document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
-
-function updateApiStatus() {
-  const key = getApiKey();
-  const el = document.getElementById('apiStatus');
-  if(key && key.startsWith('AIza')) {
-    el.textContent = '✅ Chave salva';
-    el.className = 'api-status valid';
-    document.getElementById('apiKeyInput').value = key;
-  } else if (key) {
-    el.textContent = '⚠️ Chave salva (não parece começar com "AIza")';
-    el.className = 'api-status';
-    document.getElementById('apiKeyInput').value = key;
-  } else {
-    el.textContent = '⚠️ Nenhuma chave válida. Clique em "Gerar chave gratuita"';
-    el.className = 'api-status';
-  }
-}
-updateApiStatus();
+const TABELA_POLITICA = `5. Política de Investimento\n\n| Produto | Mínimo | Máximo |\n|---------|--------|--------|\n| Títulos Financeiros: CDB / Compromissada / LCI / LCA / LF sênior | 0,0% | 40,0% |\n| Emissor investment grade com prazo de até 3 anos | 0,0% | 10,0% |\n| Emissor non investment grade com prazo até 3 anos | 0,0% | 10,0% |\n| Emissor investment grade, acima de 3 anos | 0,0% | 10,0% |\n| Emissor non investment grade, acima de 3 anos | 0,0% | 10,0% |\n| LF subordinada e subordinada híbrida | 0,0% | 40,0% |\n| Títulos Públicos | 2,0% | 100,0% |\n| LFT | 2,0% | 90,0% |\n| Títulos não financeiros: Debêntures / CRI / CRA etc | 0,0% | 40,0% |\n| Ações e Commodities | 10,0% | 80,0% |\n| Ações | 10,0% | 50,0% |\n| Ouro | 0,0% | 30,0% |\n| Derivativos Listados em Bolsa | 0,0% | 10,0% |\n| COE | 0,0% | 20,0% |\n| Fundos Estruturados | 0,0% | 50,0% |\n| FIP | 0,0% | 20,0% |\n| FII de incorporação | 0,0% | 20,0% |\n| Outros FIIs | 0,0% | 20,0% |`;
 
 let ultimoJson = null, chart = null;
 
-/* Função utilitária para extrair um JSON balanceado do texto gerado pela IA.
-   Procura o primeiro `{` e localizar o `}` correspondente contabilizando chaves. */
-function extractJsonFromText(text) {
-  if (!text || typeof text !== 'string') return null;
-  const start = text.indexOf('{');
-  if (start === -1) return null;
-  let depth = 0;
-  for (let i = start; i < text.length; i++) {
-    if (text[i] === '{') depth++;
-    else if (text[i] === '}') {
-      depth--;
-      if (depth === 0) {
-        const candidate = text.slice(start, i + 1);
-        try {
-          return JSON.parse(candidate);
-        } catch (e) {
-          // parsing failed for this slice — continue (mas dificil de recuperar)
-          return null;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-/* Função para tentar localizar texto principal da resposta, suportando vários formatos */
-function extractTextFromApiResponse(data) {
-  // Várias APIs retornam conteúdo em caminhos diferentes — tentamos com segurança
-  try {
-    if (!data) return null;
-    // caso mais comum usado antes
-    if (data.candidates && data.candidates.length && data.candidates[0].content) {
-      // content pode ser array de parts ou texto direto
-      const content = data.candidates[0].content;
-      if (Array.isArray(content)) {
-        // juntar partes que tenham .text
-        return content.map(c => c.text || (c.parts && c.parts.map(p => p.text).join('') )).join('\n');
-      }
-      return (content.parts && content.parts.map(p => p.text).join('')) || content.text || String(content);
-    }
-    // novo formato: output -> [ { content: [ { type: "output_text", text: "..." } ] } ]
-    if (data.output && Array.isArray(data.output) && data.output.length) {
-      const out = data.output[0];
-      if (out.content && Array.isArray(out.content)) {
-        const found = out.content.find(c => c.text || c.type === 'output_text');
-        if (found) return found.text || (found.parts && found.parts.map(p => p.text).join('')) || null;
-      }
-    }
-    // fallback: se a própria resposta é um texto bruto
-    if (typeof data === 'string') return data;
-    // tentar buscar em candidates[*].content[*].parts[*].text
-    if (data.candidates) {
-      for (const cand of data.candidates) {
-        if (cand.content && Array.isArray(cand.content)) {
-          for (const ct of cand.content) {
-            if (ct.parts && Array.isArray(ct.parts)) return ct.parts.map(p => p.text || '').join('');
-          }
-        }
-      }
-    }
-    // último recurso: serializar e retornar
-    return JSON.stringify(data);
-  } catch (err) {
-    return null;
+function salvarChave() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('gemini_api_key', key);
+    document.getElementById('statusKey').textContent = '✅ Chave salva!';
   }
 }
+function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || '';
+}
 
-document.getElementById('btnLimpar').onclick = () => {
-  document.getElementById('anamneseInput').value = '';
-  document.getElementById('resultArea').style.display = 'none';
-  document.getElementById('statusMsg').classList.remove('show');
-  if(chart) { chart.destroy(); chart = null; }
-  ultimoJson = null;
-  setStatus('🧹 Pronto para novo cliente', 'ok');
-};
+function setStatus(msg, ok = true) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.style.color = ok ? 'limegreen' : 'tomato';
+}
 
-document.getElementById('btnGerarIPS').onclick = async () => {
+async function gerarIPS() {
   const anamnese = document.getElementById('anamneseInput').value.trim();
-  const apiKey = getApiKey();
-  if(!anamnese) { setStatus('❌ Cole a anamnese do cliente', 'err'); return; }
-  if(!apiKey) { setStatus('❌ Configure uma chave API (localStorage)', 'err'); return; }
-  setOverlay(true, 'IA analisando a anamnese...');
+  const key = getApiKey();
+  if (!anamnese) return setStatus('❌ Informe a anamnese.', false);
+  if (!key) return setStatus('❌ Configure a chave API.', false);
+
+  document.getElementById('overlay').classList.add('show');
   try {
-    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
+    const prompt = `Você é um especialista da Pleno Gestão. A partir da anamnese, gere um JSON contendo os campos abaixo. Retorne SOMENTE o JSON, sem comentários ou explicações.
 
-ATENÇÃO: Você DEVE gerar o IPS seguindo EXATAMENTE a estrutura de TÓPICOS E SUBTÓPICOS abaixo. NÃO resuma, NÃO omita seções. Cada tópico deve ser detalhado com pelo menos 3 parágrafos.
-
-ESTRUTURA OBRIGATÓRIA (copie exatamente estes cabeçalhos):
-
-# Sobre o Cliente
-
-## Família & Pessoal
-[Detalhe: idade, estado civil, filhos, cidade onde mora, formação, estilo de vida]
-
-## Negócios / Profissão
-[Detalhe: profissão, tempo de atuação, especialidade, vínculos empregatícios ou autônomo, planos de carreira]
-
-## Fontes de Renda
-[Detalhe: renda mensal total, composição da renda, previsibilidade, estabilidade]
-
-## Investimentos Atuais
-[Detalhe: patrimônio financeiro atual, alocação por classe de ativo, rentabilidade histórica aproximada, instituições onde investe]
-
-## Estilo de Vida & Custo de Vida
-[Detalhe: custo de vida mensal, principais despesas, padrão de vida, dependentes econômicos]
-
-## Objetivos Financeiros
-[Detalhe: objetivos de curto, médio e longo prazo; prazo para cada objetivo; prioridade; sonhos específicos]
-
-# Avaliações
-
-## Patrimônio e Alocação Atual
-[Detalhe: valor do patrimônio, distribuição percentual por ativo, análise qualitativa da alocação]
-
-## Capacidade de Aporte
-[Detalhe: renda menos despesas = capacidade de aporte mensal, potencial de aumento futuro]
-
-## Projeção de Crescimento Patrimonial
-[Detalhe: Considerando aporte mensal de X, prazo de Y anos, rentabilidade bruta de Z% a.a. e inflação de W% a.a., o patrimônio real projetado é de R$...]
-
-# Recomendações Estratégicas
-
-## Gestão de Projetos de Vida
-[Detalhe: alinhamento dos objetivos com o planejamento financeiro, estratégias para cada objetivo]
-
-## Construção de Renda Passiva
-[Detalhe: estratégias para gerar renda passiva compatível com os objetivos do cliente]
-
-## Alocação Estratégica Sugerida
-[Detalhe: sugestão de alocação por classe de ativo com percentuais, justificativa baseada no perfil e objetivos]
-
-## Próximos Passos
-[Detalhe: ações imediatas, de curto e médio prazo para implementação das recomendações]
-
-Agora, com base na anamnese abaixo, gere um IPS COMPLETO seguindo ESTRITAMENTE a estrutura acima. Cada subtópico deve ser RICO em detalhes, com pelo menos 3 linhas. NÃO resuma.
+{
+  "nome_cliente": "Nome Completo",
+  "item1": "Texto do #1. Sobre o Cliente\\n\\n## Família & Pessoal\\n3+ linhas\\n\\n## Negócios / Profissão\\n3+ linhas\\n\\n## Fontes de Renda\\n3+ linhas\\n\\n## Investimentos Atuais\\n3+ linhas\\n\\n## Estilo de Vida & Custo de Vida\\n3+ linhas\\n\\n## Objetivos Financeiros\\n3+ linhas",
+  "item2": "Texto do #2. Avaliações\\n\\n## Patrimônio e Alocação Atual\\n3+ linhas\\n\\n## Capacidade de Aporte\\n3+ linhas\\n\\n## Projeção de Crescimento Patrimonial\\n3+ linhas",
+  "item3": "Texto do #3. Recomendações Estratégicas\\n\\n## Gestão de Projetos de Vida\\n3+ linhas\\n\\n## Construção de Renda Passiva\\n3+ linhas\\n\\n## Alocação Estratégica Sugerida\\n3+ linhas\\n\\n## Próximos Passos\\n3+ linhas",
+  "patrimonio": 100000,
+  "aporte": 5000,
+  "anos": 30
+}
 
 ANAMNESE:
-${anamnese}
+${anamnese}`;
 
-Após gerar os textos, retorne UM JSON com os seguintes campos:
-{
-  "nome_cliente": "Nome completo",
-  "item1_sobre_cliente": "texto completo da seção # Sobre o Cliente com todos os subtópicos",
-  "item2_avaliacoes": "texto completo da seção # Avaliações com todos os subtópicos",
-  "item3_recomendacoes": "texto completo da seção # Recomendações Estratégicas com todos os subtópicos",
-  "patrimonio": 0,
-  "renda_mensal": 0,
-  "aporte_mensal": 0,
-  "periodo_anos": 0,
-  "retorno_bruto": 0,
-  "inflacao": 0
-}`;
-
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
 
-    // leitura segura da resposta:
-    let data;
-    try {
-      data = await resposta.json();
-    } catch (e) {
-      // se não for JSON, recuperar como texto
-      const txt = await resposta.text();
-      throw new Error('Resposta da API não é JSON: ' + txt.slice(0, 500));
-    }
+    const data = await res.json();
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const match = texto.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("Resposta da IA sem JSON.");
 
-    console.log('🔍 Resposta completa:', data);
-
-    if (data.error) {
-      // se houver erro explícito da API (ex: autenticação), mostramos mensagem coerente
-      throw new Error(data.error.message || JSON.stringify(data.error));
-    }
-
-    // extrair texto principal em vários formatos possíveis
-    const textoBruto = extractTextFromApiResponse(data);
-    if (!textoBruto) throw new Error('Resposta da API sem texto reconhecível.');
-
-    console.log('🔍 Texto bruto extraído:', textoBruto.slice(0,1000));
-
-    // tentar extrair JSON balanceado do texto
-    let parsed = extractJsonFromText(textoBruto);
-    if (!parsed) {
-      // última tentativa: se o texto inteiro parecer ser JSON (sem chaves balanceadas), tentar parse direto
-      try { parsed = JSON.parse(textoBruto); } catch (e) { /* continua */ }
-    }
-    if (!parsed) {
-      throw new Error('JSON não encontrado na saída da IA. Peça para a IA retornar apenas o JSON ou verifique o prompt.');
-    }
-
-    ultimoJson = parsed;
-    console.log('🔍 JSON:', ultimoJson);
-
-    // Valores padrão
-    ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
-    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '### Família & Pessoal\nInformações não disponíveis.\n\n### Negócios\nInformações não disponíveis.\n\n### Fontes de Renda\nInformações não disponíveis.\n\n### Investimentos Atuais\nInformações não disponíveis.\n\n### Estilo de Vida\nInformações não disponíveis.\n\n### Objetivos\nInformações não disponíveis.';
-    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '### Patrimônio\nInformações não disponíveis.\n\n### Capacidade de Aporte\nInformações não disponíveis.\n\n### Projeção\nInformações não disponíveis.';
-    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || '### Gestão de Projetos\nInformações não disponíveis.\n\n### Renda Passiva\nInformações não disponíveis.\n\n### Alocação\nInformações não disponíveis.\n\n### Próximos Passos\nInformações não disponíveis.';
-    ultimoJson.patrimonio = Number(ultimoJson.patrimonio) || 0;
-    ultimoJson.renda_mensal = Number(ultimoJson.renda_mensal) || 0;
-    ultimoJson.aporte_mensal = Number(ultimoJson.aporte_mensal) || 5000;
-    ultimoJson.periodo_anos = parseInt(ultimoJson.periodo_anos) || 30;
-    ultimoJson.retorno_bruto = Number(ultimoJson.retorno_bruto) || 9.5;
-    ultimoJson.inflacao = Number(ultimoJson.inflacao) || 4.5;
-
+    ultimoJson = JSON.parse(match[0]);
     document.getElementById('editaveisContainer').innerHTML = `
-      <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
-      <div class="editable-section"><label>👤 Sobre o Cliente (tópico a tópico)</label><textarea id="editItem1" rows="20">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
-      <div class="editable-section"><label>📊 Avaliações (tópico a tópico)</label><textarea id="editItem2" rows="16">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações Estratégicas (tópico a tópico)</label><textarea id="editItem3" rows="20">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+      <div class="editable-section"><label>Nome do Cliente</label><input id="editNome" value="${ultimoJson.nome_cliente}"></div>
+      <div class="editable-section"><label>#1. Sobre o Cliente</label><textarea id="editItem1" rows="12">${ultimoJson.item1}</textarea></div>
+      <div class="editable-section"><label>#2. Avaliações</label><textarea id="editItem2" rows="10">${ultimoJson.item2}</textarea></div>
+      <div class="editable-section"><label>#3. Recomendações</label><textarea id="editItem3" rows="12">${ultimoJson.item3}</textarea></div>
     `;
 
-    // Gráfico (projeção com aporte anualizado)
-    const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
-    const anos = parseInt(ultimoJson.periodo_anos) || 30;
-    const retorno = (parseFloat(ultimoJson.retorno_bruto) || 9.5) / 100;
-    const inflacao = (parseFloat(ultimoJson.inflacao) || 4.5) / 100;
-    const txReal = (1+retorno)/(1+inflacao)-1;
-    let saldo = Number(ultimoJson.patrimonio) || 0;
-    const labels = [], dados = [];
-    for(let i=0; i<=anos; i++) {
-      labels.push(i);
-      if(i===0) dados.push(Math.round(saldo));
-      else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
-    }
-    const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
-    if(chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false, borderWidth: 3 }] },
-      options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
-    });
-
+    renderizarGrafico(ultimoJson.patrimonio, ultimoJson.aporte, ultimoJson.anos);
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com estrutura tópico a tópico!', 'ok');
-  } catch (error) {
-    console.error('❌ Erro:', error);
-    setStatus(`❌ ${error.message}`, 'err');
+    setStatus('✅ IPS gerado com sucesso!');
+  } catch (e) {
+    setStatus(`❌ Erro: ${e.message}`, false);
   } finally {
-    setOverlay(false);
+    document.getElementById('overlay').classList.remove('show');
   }
-};
+}
 
-document.getElementById('btnExportarDOCX').onclick = async () => {
-  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
-  setOverlay(true, 'Gerando DOCX...');
+function renderizarGrafico(p, a, anos) {
+  const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+  if (chart) chart.destroy();
+  const labels = Array.from({ length: anos + 1 }, (_, i) => i);
+  let saldo = p;
+  const data = [saldo];
+  for (let i = 1; i <= anos; i++) {
+    saldo = (saldo + a * 12) * 1.05; // Simulação de 5% real/ano
+    data.push(Math.round(saldo));
+  }
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data, borderColor: '#f5c842', tension: 0.2 }] },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+}
+
+function limpar() {
+  document.getElementById('anamneseInput').value = '';
+  document.getElementById('resultArea').style.display = 'none';
+  if(chart) { chart.destroy(); chart = null; }
+  ultimoJson = null;
+  setStatus('🧹 Limpado.');
+}
+
+// --- DOCX EXPORTAÇÃO ---
+function splitToParagraphs(text, bold = false) {
+  const { Paragraph, TextRun } = docx;
+  return text.split('\n').map(line => new Paragraph({
+    children: [new TextRun({ text: line, bold, size: 24 })],
+    spacing: { after: 150 }
+  }));
+}
+
+async function exportarDOCX() {
+  if (!ultimoJson) return setStatus('❌ Nenhum IPS gerado.', false);
+  document.getElementById('overlay').classList.add('show');
   try {
-    const nomeRaw = document.getElementById('editNome')?.value || ultimoJson.nome_cliente;
-    // sanitizar nome para filename
-    const nome = nomeRaw.replace(/[^\w\s\-]/g,'').trim().replace(/\s+/g,'_') || 'Cliente';
-    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, HeadingLevel } = docx;
     const canvas = document.getElementById('graficoPatrimonio');
-
-    // converter canvas para blob -> arrayBuffer -> Uint8Array para docx
-    const dataUrl = canvas.toDataURL('image/png');
-    const blob = await (await fetch(dataUrl)).blob();
-    const arrayBuffer = await blob.arrayBuffer();
-    const imageBytes = new Uint8Array(arrayBuffer);
-
-    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } = docx;
+    const imageData = canvas.toDataURL('image/png');
+    const buffer = await fetch(imageData).then(r => r.arrayBuffer());
 
     const doc = new Document({
       sections: [{
-        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        properties: {},
         children: [
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44 })] }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: nomeRaw, bold: true, size: 32 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32 })] }),
-          new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.", size: 24 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32 })] }),
-          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Avaliações", bold: true, size: 32 })] }),
-          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new ImageRun({ data: imageBytes, transformation: { width: 500, height: 300 } })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Recomendações Estratégicas", bold: true, size: 32 })] }),
-          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem3')?.value || '', size: 24 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: TEXTO_FIXO_ITEM4, size: 24 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: TABELA_POLITICA, size: 22 })] }),
-          new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: `João Pessoa, ${dataAtual}`, size: 24 })] })
+          new Paragraph({ text: "PLANO INICIAL", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: document.getElementById('editNome').value, bold: true, alignment: AlignmentType.CENTER }),
+
+          new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(TEXTO_INTRODUCAO),
+
+          new Paragraph({ text: "1. Sobre o Cliente", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(document.getElementById('editItem1').value),
+
+          new Paragraph({ text: "2. Avaliações", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(document.getElementById('editItem2').value),
+
+          new Paragraph({ children: [new ImageRun({ data: buffer, transformation: { width: 550, height: 300 } })], alignment: AlignmentType.CENTER }),
+
+          new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(document.getElementById('editItem3').value),
+
+          new Paragraph({ text: "4. Análise, Seleção e Monitoramento de Ativos", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(TEXTO_FIXO_ITEM4),
+
+          new Paragraph({ text: "5. Política de Investimento", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
+          ...splitToParagraphs(TABELA_POLITICA)
         ]
       }]
     });
 
-    const packed = await Packer.toBlob(doc);
-    saveAs(packed, `IPS_${nome}.docx`);
-    setStatus('✅ DOCX gerado!', 'ok');
-  } catch (err) {
-    console.error(err);
-    setStatus(`❌ Erro DOCX: ${err.message}`, 'err');
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `IPS_${document.getElementById('editNome').value.replace(/\s+/g, '_')}.docx`);
+    setStatus('✅ Arquivo DOCX salvo!');
+  } catch (e) {
+    console.error(e);
+    setStatus(`❌ Erro ao exportar: ${e.message}`, false);
   } finally {
-    setOverlay(false);
+    document.getElementById('overlay').classList.remove('show');
   }
-};
-
-document.getElementById('themeToggle').onclick = () => {
-  document.body.classList.toggle('light');
-  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-};
-if(localStorage.getItem('theme') === 'light') document.getElementById('themeToggle').click();
-function atualizarRelogio() { document.getElementById('hDate').textContent = new Date().toLocaleString('pt-BR'); }
-atualizarRelogio(); setInterval(atualizarRelogio, 1000);
+}
 </script>
 </body>
 </html>
