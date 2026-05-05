@@ -1,155 +1,340 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPS Pleno - CORRIGIDO</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-        textarea { width: 100%; padding: 10px; margin: 10px 0; }
-        button { background: gold; padding: 10px 15px; border: none; cursor: pointer; margin: 5px; }
-        .card { border-left: 5px solid gold; padding: 10px; margin: 20px 0; background: #f9f9f9; }
-        .hidden { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de IPS · Pleno Gestão de Investimentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+<style>
+:root {
+  --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --gold: #f5c842; --gold2: #e0a800;
+  --text: #e8eaf0; --text2: #8b93a7; --text3: #555e72;
+  --green: #2ecc71; --green-bg: rgba(46,204,113,0.12);
+  --red: #e74c3c; --red-bg: rgba(231,76,60,0.12);
+  --amber: #f39c12; --amber-bg: rgba(243,156,18,0.12);
+  --blue: #3498db; --blue-bg: rgba(52,152,219,0.12);
+  --header-bg: #161b25; --header-border: rgba(255,255,255,0.07);
+  --card-bg: #161b25; --card-border: rgba(255,255,255,0.07);
+  --input-bg: #1c2333; --input-border: rgba(255,255,255,0.13);
+  --overlay-bg: rgba(14,17,23,.88);
+  --footer-border: rgba(255,255,255,0.07);
+  --result-item-bg: #1c2333;
+}
+body.light {
+  --bg: #f5f7fa; --bg2: #ffff; --bg3: #f0f2f5;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.12);
+  --gold: #d4a017; --gold2: #b8860b;
+  --text: #1a1a2e; --text2: #4a5568; --text3: #718096;
+  --green: #27ae60; --green-bg: rgba(39,174,96,0.1);
+  --red: #e74c3c; --red-bg: rgba(231,76,60,0.1);
+  --amber: #e67e22; --amber-bg: rgba(230,126,34,0.1);
+  --header-bg: #ffff; --header-border: rgba(0,0,0,0.08);
+  --card-bg: #ffff; --card-border: rgba(0,0,0,0.08);
+  --input-bg: #ffff; --input-border: #e2e8f0;
+  --overlay-bg: rgba(255,255,255,.95);
+  --footer-border: rgba(0,0,0,0.08);
+  --result-item-bg: #f7fafc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+body { font-family: 'DM Sans', 'Atkinson Hyperlegible', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header { background: var(--header-bg); border-bottom: 1px solid var(--header-border); padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.dot { width: 28px; height: 28px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.header-date { font-size: 13px; color: var(--text3); }
+.theme-toggle { background: var(--bg3); border: 1px solid var(--border2); border-radius: 30px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+.theme-toggle:hover { border-color: var(--gold); transform: scale(1.05); }
+
+.main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+.api-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.api-input-wrap { position: relative; flex: 1; min-width: 220px; }
+.api-input { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 9px 40px 9px 14px; font-size: 14px; color: var(--text); font-family: monospace; outline: none; }
+.api-input:focus { border-color: var(--gold); }
+.api-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); background: none; border: none; }
+.btn-key { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2); text-decoration: none; }
+.btn-key:hover { border-color: var(--gold); color: var(--gold); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-gold:hover { background: var(--gold2); transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.api-status { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.api-status.valid { color: var(--green); }
+
+textarea { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', monospace; resize: vertical; }
+textarea:focus { border-color: var(--gold); outline: none; }
+
+.button-group { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+
+.status { display: none; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 8px; font-size: 14px; margin-top: 0.75rem; }
+.status.show { display: flex; }
+.status-ok { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
+.status-err { background: var(--red-bg); color: var(--red); border: 1px solid rgba(231,76,60,0.25); }
+
+.editable-section { background: var(--result-item-bg); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border-left: 3px solid var(--gold); }
+.editable-section label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.editable-section textarea, .editable-section input { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font-size: 14px; color: var(--text); font-family: inherit; }
+
+.overlay { display: none; position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+.overlay.show { display: flex; }
+.spin { width: 40px; height: 40px; border: 3px solid var(--border2); border-top-color: var(--gold); border-radius: 50%; animation: rot 0.8s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.footer { text-align: center; font-size: 12px; color: var(--text3); padding: 2rem; border-top: 1px solid var(--footer-border); margin-top: 1rem; }
+</style>
 </head>
 <body>
-<div class="container">
-    <h2>Gerador IPS - Pleno (Modo Garantido)</h2>
-    <input type="password" id="apiKey" placeholder="Sua Chave Gemini (AIza...)" style="width: 70%; padding: 8px;">
-    <button id="saveKey">Salvar Chave</button>
-    <hr>
-    <textarea id="anamnese" rows="8" placeholder="Cole a anamnese do cliente aqui..."></textarea>
-    <button id="gerar">1. GERAR IPS (IA)</button>
-    <button id="exportar">2. EXPORTAR DOCX</button>
-    <div id="status"></div>
-    <div id="resultado" class="hidden">
-        <div class="card"><label>Nome:</label><input id="nome_cliente" style="width:100%"></div>
-        <div class="card"><label>Sobre o Cliente (Detalhado):</label><textarea id="item1" rows="12"></textarea></div>
-        <div class="card"><label>Avaliações (Detalhado):</label><textarea id="item2" rows="12"></textarea></div>
-        <div class="card"><label>Recomendações (Detalhado):</label><textarea id="item3" rows="12"></textarea></div>
-        <canvas id="grafico" width="400" height="200"></canvas>
+
+<div class="overlay" id="overlay"><div class="spin"></div><div class="spin-text" id="overlayText">Processando...</div></div>
+
+<header class="header">
+  <div class="header-logo"><div class="dot">IPS</div>Gerador de IPS · Pleno Gestão de Investimentos</div>
+  <div class="header-right"><div class="header-date" id="hDate"></div><button class="theme-toggle" id="themeToggle">🌙</button></div>
+</header>
+
+<main class="main">
+  <div class="card">
+    <div class="card-title">🔑 API Gemini</div>
+    <div class="api-row">
+      <div class="api-input-wrap"><input type="password" id="apiKeyInput" class="api-input" placeholder="Cole sua chave AIza..."><button class="api-eye" id="apiEye">👁️</button></div>
+      <button class="btn btn-gold" id="btnSalvarKey">💾 Salvar chave</button>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-key">🔑 Gerar chave gratuita ↗</a>
     </div>
-</div>
+    <div class="api-status" id="apiStatus"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 Anamnese do Cliente</div>
+    <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião com o cliente..."></textarea>
+    <div class="button-group">
+      <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
+      <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
+    </div>
+    <div id="statusMsg" class="status"></div>
+  </div>
+
+  <div id="resultArea" style="display:none;">
+    <div class="card">
+      <div class="card-title">✏️ Edite o conteúdo gerado</div>
+      <div id="editaveisContainer"></div>
+      <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
+      <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta DOCX profissional</footer>
+
 <script>
-    // Config
-    const saveKeyBtn = document.getElementById('saveKey');
-    const apiKeyInput = document.getElementById('apiKey');
-    const gerarBtn = document.getElementById('gerar');
-    const exportBtn = document.getElementById('exportar');
-    const anamneseArea = document.getElementById('anamnese');
-    const statusDiv = document.getElementById('status');
-    const resultadoDiv = document.getElementById('resultado');
-    let chartInstance = null;
+const TEXTO_FIXO_ITEM4 = `# Análise, Seleção e Monitoramento de Ativos
 
-    saveKeyBtn.onclick = () => {
-        const key = apiKeyInput.value.trim();
-        if (key) localStorage.setItem('gemini_key', key);
-        statusDiv.innerText = 'Chave salva!';
-    };
-    if (localStorage.getItem('gemini_key')) apiKeyInput.value = localStorage.getItem('gemini_key');
+O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica...`;
 
-    gerarBtn.onclick = async () => {
-        const key = localStorage.getItem('gemini_key');
-        const anamnese = anamneseArea.value;
-        if (!key) { statusDiv.innerText = 'Erro: Insira a chave API'; return; }
-        if (!anamnese) { statusDiv.innerText = 'Erro: Cole a anamnese'; return; }
-        statusDiv.innerText = 'Gerando... (pode levar 15 segundos)';
-        
-        // PROMPT EXECUTIVO: Força a resposta em JSON PURO
-        const prompt = `Você é um planejador financeiro. Gere um plano IPS completíssimo.
-        Retorne APENAS UM JSON válido, sem texto antes ou depois.
-        O JSON deve ter os campos: nome, item1, item2, item3, aporte, anos, retorno, inflacao, patrimonio_atual.
-        
-        - item1: "Sobre o Cliente" (MUITO DETALHADO, use subtópicos: Familia/Profissão/Renda/Investimentos/Objetivos. Mínimo 500 caracteres)
-        - item2: "Avaliações" (Análise patrimonial, capacidade de aporte. Mínimo 300 caracteres)
-        - item3: "Recomendações Estratégicas" (Sugestões de alocação, prazos, próximos passos. Mínimo 400 caracteres)
-        
-        Baseado na anamnese: ${anamnese}`;
+const TABELA_POLITICA = `# Política de Investimento\n\n| Produto | Mínimo | Máximo |\n|---------|--------|--------|\n| Títulos Financeiros | 0,0% | 40,0% |\n| Títulos Públicos | 2,0% | 100,0% |\n| Ações e Commodities | 10,0% | 80,0% |`;
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } })
-            });
-            const data = await response.json();
-            let rawText = data.candidates[0].content.parts[0].text;
-            // Força a extração do JSON
-            let jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('IA não retornou JSON');
-            let dados = JSON.parse(jsonMatch[0]);
-            
-            // Fallback manual caso a IA tenha vindo vazia
-            document.getElementById('nome_cliente').value = dados.nome || "Cliente Genérico";
-            document.getElementById('item1').value = dados.item1 || "Conteúdo não gerado corretamente pela IA. Verifique a chave.";
-            document.getElementById('item2').value = dados.item2 || "Conteúdo não gerado.";
-            document.getElementById('item3').value = dados.item3 || "Conteúdo não gerado.";
-            
-            // Gráfico
-            let aporte = parseFloat(dados.aporte) || 5000;
-            let anos = parseInt(dados.anos) || 30;
-            let retorno = (parseFloat(dados.retorno) / 100) || 0.095;
-            let inflacao = (parseFloat(dados.inflacao) / 100) || 0.045;
-            let txReal = (1+retorno)/(1+inflacao)-1;
-            let saldo = parseFloat(dados.patrimonio_atual) || 0;
-            let labels = [], valores = [];
-            for(let i=0; i<=anos; i++) {
-                labels.push(i);
-                if(i>0) saldo = (saldo + (aporte*12)) * (1+txReal);
-                valores.push(Math.round(saldo));
-            }
-            const ctx = document.getElementById('grafico').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Patrimônio Projetado', data: valores, borderColor: 'gold' }] } });
-            
-            resultadoDiv.classList.remove('hidden');
-            statusDiv.innerText = 'Gerado com sucesso! Edite os textos se quiser e clique em Exportar.';
-        } catch (err) {
-            statusDiv.innerText = `Erro na Geração: ${err.message}. Verifique o console (F12) e a chave.`;
-            console.error(err);
-        }
-    };
+function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
+function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
+function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
 
-    exportBtn.onclick = async () => {
-        if (!document.getElementById('nome_cliente').value) { alert("Gere o IPS primeiro"); return; }
-        statusDiv.innerText = 'Gerando DOCX...';
-        try {
-            const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
-            const blobImg = await (await fetch(document.getElementById('grafico').toDataURL())).blob();
-            const imageBuffer = await blobImg.arrayBuffer();
-            
-            const doc = new Document({
-                sections: [{
-                    children: [
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO DE INVESTIMENTOS - PLENO", bold: true, size: 40 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: document.getElementById('nome_cliente').value, bold: true, size: 32 })] }),
-                        new Paragraph({ children: [] }),
-                        new Paragraph({ children: [new TextRun({ text: "1. SOBRE O CLIENTE", bold: true, size: 28 })] }),
-                        new Paragraph({ children: [new TextRun({ text: document.getElementById('item1').value, size: 24 })] }),
-                        new Paragraph({ children: [] }),
-                        new Paragraph({ children: [new TextRun({ text: "2. AVALIAÇÕES", bold: true, size: 28 })] }),
-                        new Paragraph({ children: [new TextRun({ text: document.getElementById('item2').value, size: 24 })] }),
-                        new Paragraph({ children: [] }),
-                        new Paragraph({ children: [new TextRun({ text: "3. RECOMENDAÇÕES ESTRATÉGICAS", bold: true, size: 28 })] }),
-                        new Paragraph({ children: [new TextRun({ text: document.getElementById('item3').value, size: 24 })] }),
-                        new Paragraph({ children: [] }),
-                        new Paragraph({ children: [new TextRun({ text: "Projeção Patrimonial:", bold: true, size: 28 })] }),
-                        new Paragraph({ children: [new ImageRun({ data: imageBuffer, transformation: { width: 500, height: 250 } })] })
-                    ]
-                }]
-            });
-            const blob = await Packer.toBlob(doc);
-            saveAs(blob, `IPS_${document.getElementById('nome_cliente').value.replace(/ /g,'_')}.docx`);
-            statusDiv.innerText = 'DOCX salvo com sucesso!';
-        } catch(err) {
-            statusDiv.innerText = `Erro Exportar: ${err.message}`;
-            console.error(err);
-        }
-    };
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+function safeString(value, defaultValue = '') {
+  if (value === null || value === undefined) return defaultValue;
+  return String(value);
+}
+
+document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
+document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
+function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave'; el.className = 'api-status'; } }
+updateApiStatus();
+
+let ultimoJson = null, chart = null;
+
+document.getElementById('btnLimpar').onclick = () => {
+  document.getElementById('anamneseInput').value = '';
+  document.getElementById('resultArea').style.display = 'none';
+  document.getElementById('statusMsg').classList.remove('show');
+  if(chart) { chart.destroy(); chart = null; }
+  ultimoJson = null;
+  setStatus('🧹 Pronto para novo cliente', 'ok');
+};
+
+document.getElementById('btnGerarIPS').onclick = async () => {
+  const anamnese = document.getElementById('anamneseInput').value.trim();
+  const apiKey = getApiKey();
+  if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
+  if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
+  setOverlay(true, 'IA analisando...');
+  try {
+    const prompt = `Você é um planejador financeiro sênior. Gere um IPS completo e detalhado.
+
+Retorne SOMENTE UM JSON válido, sem texto adicional, com estes campos:
+{
+  "nome_cliente": "Nome completo",
+  "item1_sobre_cliente": "Texto com ## Família, ## Profissão, ## Renda, ## Investimentos, ## Objetivos (mínimo 500 caracteres)",
+  "item2_avaliacoes": "Texto com análise patrimonial e capacidade de aporte (mínimo 300 caracteres)",
+  "item3_recomendacoes": "Texto com recomendações estratégicas (mínimo 400 caracteres)",
+  "patrimonio": 0,
+  "renda_mensal": 0,
+  "aporte_mensal": 0,
+  "periodo_anos": 30,
+  "retorno_bruto": 9.5,
+  "inflacao": 4.5
+}
+
+Anamnese: ${anamnese}`;
+
+    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
+    });
+    
+    const data = await resposta.json();
+    console.log('Resposta API:', data);
+    
+    // Verificação de erro da API
+    if (data.error) {
+      throw new Error(`API Error: ${data.error.message}`);
+    }
+    
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      throw new Error('API não retornou conteúdo válido. Verifique sua chave.');
+    }
+    
+    const texto = data.candidates[0].content.parts[0].text;
+    console.log('Texto bruto:', texto);
+    
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
+    
+    ultimoJson = JSON.parse(jsonMatch[0]);
+    
+    // Fallback para campos vazios
+    ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
+    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família\nInformações não disponíveis.\n\n## Profissão\nInformações não disponíveis.\n\n## Renda\nInformações não disponíveis.\n\n## Investimentos\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
+    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || 'Análise patrimonial não disponível.';
+    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || 'Recomendações não disponíveis.';
+    ultimoJson.aporte_mensal = ultimoJson.aporte_mensal || 5000;
+    ultimoJson.periodo_anos = ultimoJson.periodo_anos || 30;
+    ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
+    ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
+    
+    document.getElementById('editaveisContainer').innerHTML = `
+      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
+      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
+      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="10">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+    `;
+    
+    // Gráfico
+    const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
+    const anos = parseInt(ultimoJson.periodo_anos) || 30;
+    const retorno = parseFloat(ultimoJson.retorno_bruto) / 100 || 0.095;
+    const inflacao = parseFloat(ultimoJson.inflacao) / 100 || 0.045;
+    const txReal = (1+retorno)/(1+inflacao)-1;
+    let saldo = parseFloat(ultimoJson.patrimonio) || 0;
+    const labels = [], dados = [];
+    for(let i=0; i<=anos; i++) {
+      labels.push(i);
+      if(i===0) dados.push(saldo);
+      else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
+    }
+    const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false, borderWidth: 3 }] },
+      options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
+    });
+    
+    document.getElementById('resultArea').style.display = 'block';
+    setStatus('✅ IPS gerado!', 'ok');
+  } catch (error) {
+    console.error('Erro:', error);
+    setStatus(`❌ ${error.message}`, 'err');
+  } finally {
+    setOverlay(false);
+  }
+};
+
+document.getElementById('btnExportarDOCX').onclick = async () => {
+  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
+  setOverlay(true, 'Gerando DOCX...');
+  try {
+    const nome = document.getElementById('editNome')?.value || 'Cliente';
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    const canvas = document.getElementById('graficoPatrimonio');
+    const imagemBlob = await (await fetch(canvas.toDataURL('image/png'))).blob();
+    
+    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } = docx;
+    
+    const doc = new Document({
+      sections: [{
+        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        children: [
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44 })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: nome, bold: true, size: 32 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32 })] }),
+          new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste.", size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32 })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Avaliações", bold: true, size: 32 })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new ImageRun({ data: imagemBlob, transformation: { width: 500, height: 300 } })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Recomendações Estratégicas", bold: true, size: 32 })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem3')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: TEXTO_FIXO_ITEM4, size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: TABELA_POLITICA, size: 22 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: `João Pessoa, ${dataAtual}`, size: 24 })] })
+        ]
+      }]
+    });
+    
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.docx`);
+    setStatus('✅ DOCX gerado!', 'ok');
+  } catch (error) {
+    console.error('Erro DOCX:', error);
+    setStatus(`❌ Erro: ${error.message}`, 'err');
+  } finally {
+    setOverlay(false);
+  }
+};
+
+document.getElementById('themeToggle').onclick = () => {
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+};
+if(localStorage.getItem('theme') === 'light') document.getElementById('themeToggle').click();
+function atualizarRelogio() { document.getElementById('hDate').textContent = new Date().toLocaleString('pt-BR'); }
+atualizarRelogio(); setInterval(atualizarRelogio, 1000);
 </script>
 </body>
 </html>
