@@ -216,82 +216,33 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   const apiKey = getApiKey();
   if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
   if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
-  setOverlay(true, 'IA analisando (Gemini 2.5 Flash)...');
+  setOverlay(true, 'IA analisando...');
   try {
-    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
+    // PROMPT QUE FORÇA JSON PURO
+    const prompt = `Responda APENAS com um JSON válido. Nada de texto antes ou depois. Use aspas duplas.
 
-ATENÇÃO: Gere um IPS COMPLETO e EXTREMAMENTE DETALHADO, seguindo EXATAMENTE a estrutura abaixo com TODOS os subtópicos. NÃO resumo. CADA subtópico deve ter no mínimo 3 parágrafos.
-
-ESTRUTURA OBRIGATÓRIA:
-
-# Sobre o Cliente
-
-## Família & Pessoal
-(detalhe: idade, estado civil, filhos, cidade, formação, estilo de vida)
-
-## Negócios / Profissão
-(detalhe: profissão, tempo de atuação, especialidade, vínculos)
-
-## Fontes de Renda
-(detalhe: renda mensal total, composição, previsibilidade)
-
-## Investimentos Atuais
-(detalhe: patrimônio financeiro, alocação por classe de ativo)
-
-## Estilo de Vida & Custo
-(detalhe: custo de vida mensal, principais despesas)
-
-## Objetivos Financeiros
-(detalhe: objetivos de curto, médio e longo prazo)
-
-# Avaliações
-
-## Patrimônio e Alocação Atual
-(detalhe: valor do patrimônio, distribuição percentual)
-
-## Capacidade de Aporte
-(detalhe: renda menos despesas = capacidade de aporte mensal)
-
-## Projeção de Crescimento Patrimonial
-(detalhe: projeção considerando aporte, prazo, rentabilidade e inflação)
-
-# Recomendações Estratégicas
-
-## Gestão de Projetos de Vida
-(detalhe: alinhamento dos objetivos com o planejamento financeiro)
-
-## Construção de Renda Passiva
-(detalhe: estratégias para gerar renda passiva)
-
-## Alocação Estratégica Sugerida
-(detalhe: sugestão de alocação por classe de ativo com percentuais)
-
-## Próximos Passos
-(detalhe: ações imediatas e de curto prazo)
-
-Agora, com base na anamnese abaixo, gere o IPS COMPLETO seguindo ESTRITAMENTE a estrutura acima.
-
-Após gerar os textos, retorne UM JSON válido (sem texto antes ou depois) com os campos:
 {
-  "nome_cliente": "Nome completo",
-  "item1_sobre_cliente": "texto completo da seção # Sobre o Cliente com todos os subtópicos",
-  "item2_avaliacoes": "texto completo da seção # Avaliações com todos os subtópicos",
-  "item3_recomendacoes": "texto completo da seção # Recomendações Estratégicas com todos os subtópicos",
-  "patrimonio": 0,
-  "renda_mensal": 0,
-  "aporte_mensal": 0,
-  "periodo_anos": 30,
-  "retorno_bruto": 9.5,
+  "nome_cliente": "João Silva",
+  "item1_sobre_cliente": "## Família & Pessoal\\nJoão tem 35 anos, casado, 2 filhos...\\n\\n## Negócios\\nEmpresário do ramo de tecnologia...\\n\\n## Fontes de Renda\\nRenda mensal de R$ 25.000...\\n\\n## Investimentos Atuais\\nPatrimônio de R$ 150.000...\\n\\n## Estilo de Vida\\nCusto mensal de R$ 12.000...\\n\\n## Objetivos\\nAposentadoria aos 60 anos...",
+  "item2_avaliacoes": "## Patrimônio\\nPatrimônio atual de R$ 150.000...\\n\\n## Capacidade de Aporte\\nCapacidade de poupança mensal de R$ 13.000...\\n\\n## Projeção\\nCom aportes mensais de R$ 13.000 por 25 anos...",
+  "item3_recomendacoes": "## Gestão de Projetos\\nEstruturar reserva de emergência...\\n\\n## Renda Passiva\\nAlocar em ativos que gerem fluxo de caixa...\\n\\n## Alocação Estratégica\\n60% renda fixa, 40% variável...\\n\\n## Próximos Passos\\nReunião mensal de acompanhamento...",
+  "patrimonio": 150000,
+  "renda_mensal": 25000,
+  "aporte_mensal": 13000,
+  "periodo_anos": 25,
+  "retorno_bruto": 10.5,
   "inflacao": 4.5
 }
 
-ANAMNESE:
-${anamnese}`;
+Agora gere o JSON para este cliente: ${anamnese}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+      body: JSON.stringify({ 
+        contents: [{ parts: [{ text: prompt }] }], 
+        generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: "application/json" } 
+      })
     });
     
     const data = await resposta.json();
@@ -303,12 +254,20 @@ ${anamnese}`;
     const texto = data.candidates[0].content.parts[0].text;
     console.log('Texto bruto:', texto);
     
-    const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado');
+    // Tenta fazer o parse direto - a IA já deve retornar JSON puro
+    let dados = null;
+    try {
+      dados = JSON.parse(texto);
+    } catch(e) {
+      // Se falhar, tenta extrair com regex
+      const jsonMatch = texto.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
+      dados = JSON.parse(jsonMatch[0]);
+    }
     
-    ultimoJson = JSON.parse(jsonMatch[0]);
+    ultimoJson = dados;
     
-    // Fallback
+    // Fallback para garantir campos
     ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
     ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
     ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
@@ -317,6 +276,7 @@ ${anamnese}`;
     ultimoJson.periodo_anos = ultimoJson.periodo_anos || 30;
     ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
     ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
+    ultimoJson.patrimonio = ultimoJson.patrimonio || 0;
     
     document.getElementById('editaveisContainer').innerHTML = `
       <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
@@ -347,7 +307,7 @@ ${anamnese}`;
     });
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com estrutura tópico a tópico!', 'ok');
+    setStatus('✅ IPS gerado com sucesso!', 'ok');
   } catch (error) {
     console.error('Erro:', error);
     setStatus(`❌ ${error.message}`, 'err');
