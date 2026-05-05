@@ -4,136 +4,234 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerador de IPS · Pleno Gestão de Investimentos</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* ───────────────────────────────────────────
+   VARIÁVEIS — TEMA ESCURO (padrão)
+─────────────────────────────────────────── */
 :root {
-  --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
-  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
-  --gold: #f5c842; --gold2: #e0a800;
-  --text: #e8eaf0; --text2: #8b93a7; --text3: #555e72;
-  --green: #2ecc71; --green-bg: rgba(46,204,113,0.12);
-  --red: #e74c3c; --red-bg: rgba(231,76,60,0.12);
-  --amber: #f39c12; --amber-bg: rgba(243,156,18,0.12);
-  --blue: #3498db; --blue-bg: rgba(52,152,219,0.12);
-  --header-bg: #161b25; --header-border: rgba(255,255,255,0.07);
-  --card-bg: #161b25; --card-border: rgba(255,255,255,0.07);
-  --input-bg: #1c2333; --input-border: rgba(255,255,255,0.13);
-  --overlay-bg: rgba(14,17,23,.88);
+  --bg: #0e1117;
+  --bg2: #161b25;
+  --bg3: #1c2333;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --gold: #f5c842;
+  --gold2: #e0a800;
+  --text: #e8eaf0;
+  --text2: #8b93a7;
+  --text3: #555e72;
+  --green: #2ecc71;
+  --green-bg: rgba(46,204,113,0.12);
+  --red: #e74c3c;
+  --red-bg: rgba(231,76,60,0.12);
+  --amber: #f39c12;
+  --amber-bg: rgba(243,156,18,0.12);
+  --blue: #3498db;
+  --blue-bg: rgba(52,152,219,0.12);
+  --header-bg: #161b25;
+  --header-border: rgba(255,255,255,0.07);
+  --card-bg: #161b25;
+  --card-border: rgba(255,255,255,0.07);
+  --input-bg: #1c2333;
+  --input-border: rgba(255,255,255,0.13);
+  --overlay-bg: rgba(14,17,23,.92);
   --footer-border: rgba(255,255,255,0.07);
   --result-item-bg: #1c2333;
 }
+
+/* ───────────────────────────────────────────
+   VARIÁVEIS — TEMA CLARO
+   CORREÇÃO #1: #ffff → #ffffff
+─────────────────────────────────────────── */
 body.light {
-  --bg: #f5f7fa; --bg2: #ffff; --bg3: #f0f2f5;
-  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.12);
-  --gold: #d4a017; --gold2: #b8860b;
-  --text: #1a1a2e; --text2: #4a5568; --text3: #718096;
-  --green: #27ae60; --green-bg: rgba(39,174,96,0.1);
-  --red: #e74c3c; --red-bg: rgba(231,76,60,0.1);
-  --amber: #e67e22; --amber-bg: rgba(230,126,34,0.1);
-  --header-bg: #ffff; --header-border: rgba(0,0,0,0.08);
-  --card-bg: #ffff; --card-border: rgba(0,0,0,0.08);
-  --input-bg: #ffff; --input-border: #e2e8f0;
+  --bg: #f5f7fa;
+  --bg2: #ffffff;          /* FIX: era #ffff (inválido) */
+  --bg3: #f0f2f5;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.12);
+  --gold: #d4a017;
+  --gold2: #b8860b;
+  --text: #1a1a2e;
+  --text2: #4a5568;
+  --text3: #718096;
+  --green: #27ae60;
+  --green-bg: rgba(39,174,96,0.1);
+  --red: #e74c3c;
+  --red-bg: rgba(231,76,60,0.1);
+  --amber: #e67e22;
+  --amber-bg: rgba(230,126,34,0.1);
+  --header-bg: #ffffff;    /* FIX: era #ffff */
+  --header-border: rgba(0,0,0,0.08);
+  --card-bg: #ffffff;      /* FIX: era #ffff */
+  --card-border: rgba(0,0,0,0.08);
+  --input-bg: #ffffff;     /* FIX: era #ffff */
+  --input-border: #e2e8f0;
   --overlay-bg: rgba(255,255,255,.95);
   --footer-border: rgba(0,0,0,0.08);
   --result-item-bg: #f7fafc;
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
 body { font-family: 'DM Sans', 'Atkinson Hyperlegible', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
+/* ── Header ─────────────────────────────── */
 .header { background: var(--header-bg); border-bottom: 1px solid var(--header-border); padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .header-logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
-.dot { width: 28px; height: 28px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; }
+.dot { width: 28px; height: 28px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000; }
 .header-right { display: flex; align-items: center; gap: 1rem; }
 .header-date { font-size: 13px; color: var(--text3); }
-.theme-toggle { background: var(--bg3); border: 1px solid var(--border2); border-radius: 30px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+.theme-toggle { background: var(--bg3); border: 1px solid var(--border2); border-radius: 30px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: border-color 0.2s, transform 0.15s; }
 .theme-toggle:hover { border-color: var(--gold); transform: scale(1.05); }
 
+/* ── Layout ──────────────────────────────── */
 .main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
 .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
 .card-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
 
+/* ── API Key ─────────────────────────────── */
 .api-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .api-input-wrap { position: relative; flex: 1; min-width: 220px; }
-.api-input { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 9px 40px 9px 14px; font-size: 14px; color: var(--text); font-family: monospace; outline: none; }
+.api-input { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 9px 40px 9px 14px; font-size: 14px; color: var(--text); font-family: monospace; outline: none; transition: border-color 0.2s; }
 .api-input:focus { border-color: var(--gold); }
-.api-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); background: none; border: none; }
-.btn-key { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2); text-decoration: none; }
+.api-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); background: none; border: none; font-size: 16px; line-height: 1; padding: 2px; }
+.btn-key { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2); text-decoration: none; transition: border-color 0.2s, color 0.2s; }
 .btn-key:hover { border-color: var(--gold); color: var(--gold); }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
-.btn-gold { background: var(--gold); color: #000; }
-.btn-gold:hover { background: var(--gold2); transform: translateY(-1px); }
-.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
-.btn-ghost:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
 .api-status { font-size: 12px; color: var(--text3); margin-top: 4px; }
 .api-status.valid { color: var(--green); }
 
-textarea { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', monospace; resize: vertical; }
-textarea:focus { border-color: var(--gold); outline: none; }
+/* ── Botões ──────────────────────────────── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: background 0.2s, transform 0.15s, opacity 0.2s; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-gold:hover:not(:disabled) { background: var(--gold2); transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.btn-export { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); }
+.btn-export:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+
+/* ── Textarea / Input ────────────────────── */
+textarea { width: 100%; background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif; resize: vertical; outline: none; transition: border-color 0.2s; }
+textarea:focus { border-color: var(--gold); }
 
 .button-group { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
 
+/* ── Status ──────────────────────────────── */
 .status { display: none; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 8px; font-size: 14px; margin-top: 0.75rem; }
 .status.show { display: flex; }
-.status-ok { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
+.status-ok  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
 .status-err { background: var(--red-bg); color: var(--red); border: 1px solid rgba(231,76,60,0.25); }
 
+/* ── Área editável ───────────────────────── */
 .editable-section { background: var(--result-item-bg); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border-left: 3px solid var(--gold); }
 .editable-section label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-.editable-section textarea, .editable-section input { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font-size: 14px; color: var(--text); font-family: inherit; }
+.editable-section textarea,
+.editable-section input  { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font-size: 14px; color: var(--text); font-family: inherit; outline: none; transition: border-color 0.2s; }
+.editable-section textarea:focus,
+.editable-section input:focus  { border-color: var(--gold); }
 
+/* ── Overlay / Spinner ───────────────────── */
 .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
 .overlay.show { display: flex; }
 .spin { width: 40px; height: 40px; border: 3px solid var(--border2); border-top-color: var(--gold); border-radius: 50%; animation: rot 0.8s linear infinite; }
+.spin-text { font-size: 14px; color: var(--text2); }
 @keyframes rot { to { transform: rotate(360deg); } }
 
+/* ── Aviso de segurança ──────────────────── */
+.security-notice {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--amber-bg); border: 1px solid rgba(243,156,18,0.25);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px;
+  color: var(--amber); margin-top: 0.75rem;
+}
+.security-notice strong { display: block; margin-bottom: 2px; }
+
+/* ── Footer ──────────────────────────────── */
 .footer { text-align: center; font-size: 12px; color: var(--text3); padding: 2rem; border-top: 1px solid var(--footer-border); margin-top: 1rem; }
 </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay"><div class="spin"></div><div class="spin-text" id="overlayText">Processando...</div></div>
+<!-- Overlay de carregamento com mensagens rotativas -->
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div class="spin-text" id="overlayText">Processando...</div>
+</div>
 
 <header class="header">
-  <div class="header-logo"><div class="dot">IPS</div>Gerador de IPS · Pleno Gestão de Investimentos</div>
-  <div class="header-right"><div class="header-date" id="hDate"></div><button class="theme-toggle" id="themeToggle">🌙</button></div>
+  <div class="header-logo">
+    <div class="dot">IPS</div>
+    Gerador de IPS · Pleno Gestão de Investimentos
+  </div>
+  <div class="header-right">
+    <div class="header-date" id="hDate"></div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema">🌙</button>
+  </div>
 </header>
 
 <main class="main">
+
+  <!-- Card: API Key -->
   <div class="card">
     <div class="card-title">🔑 API Gemini</div>
     <div class="api-row">
-      <div class="api-input-wrap"><input type="password" id="apiKeyInput" class="api-input" placeholder="Cole sua chave AIza..."><button class="api-eye" id="apiEye">👁️</button></div>
+      <div class="api-input-wrap">
+        <input type="password" id="apiKeyInput" class="api-input" placeholder="Cole sua chave AIza..." autocomplete="off" spellcheck="false">
+        <button class="api-eye" id="apiEye" aria-label="Mostrar/ocultar chave">👁️</button>
+      </div>
       <button class="btn btn-gold" id="btnSalvarKey">💾 Salvar chave</button>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-key">🔑 Gerar chave gratuita ↗</a>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn-key">🔑 Gerar chave gratuita ↗</a>
     </div>
     <div class="api-status" id="apiStatus"></div>
+
+    <!-- MELHORIA: aviso de segurança explícito sobre localStorage -->
+    <div class="security-notice" id="securityNotice" style="display:none;">
+      <span>⚠️</span>
+      <div>
+        <strong>Atenção: uso pessoal e local apenas</strong>
+        A chave API fica salva no armazenamento local deste navegador. Use somente em máquinas pessoais e de confiança. Nunca hospede esta ferramenta de forma pública sem um backend proxy.
+      </div>
+    </div>
   </div>
 
+  <!-- Card: Anamnese -->
   <div class="card">
     <div class="card-title">📝 Anamnese do Cliente</div>
     <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião com o cliente..."></textarea>
     <div class="button-group">
+      <!-- MELHORIA: botão desabilitado durante processamento (anti-duplo-clique) -->
       <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
       <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
     </div>
     <div id="statusMsg" class="status"></div>
   </div>
 
+  <!-- Card: Resultado editável -->
   <div id="resultArea" style="display:none;">
     <div class="card">
-      <div class="card-title">✏️ Edite o conteúdo gerado</div>
+      <div class="card-title">
+        ✏️ Edite o conteúdo gerado
+        <span style="font-size:11px; color: var(--text3); font-weight:400; text-transform:none; letter-spacing:0;">
+          Subtítulos com ## serão formatados automaticamente na exportação HTML
+        </span>
+      </div>
       <div id="editaveisContainer"></div>
       <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
         <button class="btn btn-gold" id="btnExportarHTML">📄 Exportar como HTML</button>
-        <button class="btn btn-gold" id="btnExportarTXT">📝 Exportar como TXT</button>
+        <button class="btn btn-export" id="btnExportarTXT">📝 Exportar como TXT</button>
       </div>
     </div>
   </div>
+
 </main>
 
-<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta HTML/TXT</footer>
+<footer class="footer">
+  IA treinada com o modelo Pleno · Dados 100% privados · Exporta HTML/TXT
+</footer>
 
 <script>
+/* ═══════════════════════════════════════════════════
+   CONTEÚDO FIXO
+═══════════════════════════════════════════════════ */
 const TEXTO_FIXO_ITEM4 = `ANÁLISE, SELEÇÃO E MONITORAMENTO DE ATIVOS
 
 O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.
@@ -175,27 +273,40 @@ FIP                                            | 0,0%   | 20,0%
 FII de incorporação                            | 0,0%   | 20,0%
 Outros FIIs                                    | 0,0%   | 20,0%`;
 
-function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
-function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
-function setOverlay(show, txt) { 
-  const overlay = document.getElementById('overlay');
-  const overlayText = document.getElementById('overlayText');
-  if(show) {
-    overlay.classList.add('show');
-    if(txt && overlayText) overlayText.textContent = txt;
-  } else {
-    overlay.classList.remove('show');
-  }
+/* ═══════════════════════════════════════════════════
+   ESTADO DA APLICAÇÃO
+   MELHORIA: estado centralizado em objeto, não variável global solta
+═══════════════════════════════════════════════════ */
+const App = {
+  ultimoJson: null,
+  gerando: false,
+  clockInterval: null,
+
+  setJson(data) { this.ultimoJson = data; },
+  clearJson()   { this.ultimoJson = null; },
+  hasJson()     { return this.ultimoJson !== null; }
+};
+
+/* ═══════════════════════════════════════════════════
+   UTILITÁRIOS
+═══════════════════════════════════════════════════ */
+
+function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || '';
 }
 
+/**
+ * CORREÇÃO #3: escapeHtml completo — inclui aspas simples e duplas
+ * Previne XSS ao injetar valores em atributos HTML (ex: value="...")
+ */
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')    // FIX: adicionado
+    .replace(/'/g, '&#39;');    // FIX: adicionado
 }
 
 function safeString(value, defaultValue = '') {
@@ -203,261 +314,427 @@ function safeString(value, defaultValue = '') {
   return String(value);
 }
 
-// API Key handlers
-document.getElementById('btnSalvarKey').onclick = () => { 
-  const val = document.getElementById('apiKeyInput').value.trim(); 
-  if(val) localStorage.setItem('gemini_api_key', val); 
-  updateApiStatus(); 
+/**
+ * MELHORIA: converte Markdown simples (## e \n) em HTML semântico
+ * Resolve o problema dos "## Subtítulo" aparecendo literalmente no HTML exportado
+ */
+function markdownToHtml(text) {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .map(line => {
+      if (line.startsWith('## ')) return `<h3>${escapeHtml(line.slice(3))}</h3>`;
+      if (line.startsWith('# '))  return `<h2>${escapeHtml(line.slice(2))}</h2>`;
+      if (line.trim() === '')      return '<br>';
+      return `<p>${escapeHtml(line)}</p>`;
+    })
+    .join('\n');
+}
+
+/**
+ * CORREÇÃO #5: extração de JSON mais robusta
+ * Usa stack para encontrar o JSON completo sem capturar matches errados
+ */
+function extractJSON(text) {
+  // Remove blocos de código markdown se presentes
+  const stripped = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
+
+  // Percorre o texto procurando o início de um objeto JSON
+  for (let i = 0; i < stripped.length; i++) {
+    if (stripped[i] !== '{') continue;
+
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let j = i;
+
+    for (; j < stripped.length; j++) {
+      const ch = stripped[j];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          try {
+            return JSON.parse(stripped.substring(i, j + 1));
+          } catch (e) {
+            // tenta o próximo candidato
+            break;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * CORREÇÃO #6: setStatus com duração diferenciada para erros vs sucesso
+ */
+function setStatus(msg, tipo, durationMs) {
+  const el = document.getElementById('statusMsg');
+  el.innerHTML = msg;
+  el.className = `status show status-${tipo}`;
+  const duration = durationMs || (tipo === 'err' ? 12000 : 5000);
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function setOverlay(show, txt) {
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  if (show) {
+    overlay.classList.add('show');
+    if (txt && overlayText) overlayText.textContent = txt;
+  } else {
+    overlay.classList.remove('show');
+  }
+}
+
+/**
+ * MELHORIA: mensagens rotativas no overlay durante geração
+ */
+function startRotatingMessages(messages, intervalMs = 3500) {
+  let i = 0;
+  const el = document.getElementById('overlayText');
+  if (el) el.textContent = messages[0];
+  return setInterval(() => {
+    i = (i + 1) % messages.length;
+    if (el) el.textContent = messages[i];
+  }, intervalMs);
+}
+
+/* ═══════════════════════════════════════════════════
+   API KEY HANDLERS
+═══════════════════════════════════════════════════ */
+document.getElementById('btnSalvarKey').onclick = () => {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  // MELHORIA: validação mais rigorosa antes de salvar
+  if (val && val.startsWith('AIza') && val.length > 30) {
+    localStorage.setItem('gemini_api_key', val);
+    updateApiStatus();
+    setStatus('✅ Chave salva com sucesso', 'ok');
+  } else if (val) {
+    setStatus('❌ Chave inválida. Deve começar com "AIza" e ter comprimento mínimo.', 'err');
+  } else {
+    setStatus('❌ Cole a chave antes de salvar', 'err');
+  }
 };
 
-document.getElementById('apiEye').onclick = () => { 
-  const inp = document.getElementById('apiKeyInput'); 
-  inp.type = inp.type === 'password' ? 'text' : 'password'; 
+document.getElementById('apiEye').onclick = () => {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 };
 
-function updateApiStatus() { 
-  const key = getApiKey(); 
-  const el = document.getElementById('apiStatus'); 
-  if(key && key.startsWith('AIza')) { 
-    el.textContent = '✅ Chave salva'; 
-    el.className = 'api-status valid'; 
-    document.getElementById('apiKeyInput').value = key; 
-  } else { 
-    el.textContent = '⚠️ Nenhuma chave'; 
-    el.className = 'api-status'; 
-  } 
+function updateApiStatus() {
+  const key = getApiKey();
+  const el = document.getElementById('apiStatus');
+  const notice = document.getElementById('securityNotice');
+  if (key && key.startsWith('AIza') && key.length > 30) {
+    el.textContent = '✅ Chave salva e válida';
+    el.className = 'api-status valid';
+    document.getElementById('apiKeyInput').value = key;
+    if (notice) notice.style.display = 'flex';   // mostra aviso de segurança
+  } else {
+    el.textContent = '⚠️ Nenhuma chave configurada';
+    el.className = 'api-status';
+    if (notice) notice.style.display = 'none';
+  }
 }
 updateApiStatus();
 
-let ultimoJson = null;
-
-// Limpar
+/* ═══════════════════════════════════════════════════
+   LIMPAR
+═══════════════════════════════════════════════════ */
 document.getElementById('btnLimpar').onclick = () => {
   document.getElementById('anamneseInput').value = '';
   document.getElementById('resultArea').style.display = 'none';
   document.getElementById('statusMsg').classList.remove('show');
-  ultimoJson = null;
+  App.clearJson();
   setStatus('🧹 Pronto para novo cliente', 'ok');
 };
 
-// Função para extrair JSON de qualquer texto
-function extractJSON(text) {
-  // Tenta encontrar { } no texto
-  let match = text.match(/\{[\s\S]*\}/);
-  if (match) {
-    try {
-      return JSON.parse(match[0]);
-    } catch(e) {}
-  }
-  
-  // Tenta encontrar algo que pareça JSON
-  let start = text.indexOf('{');
-  let end = text.lastIndexOf('}');
-  if (start !== -1 && end !== -1 && end > start) {
-    try {
-      let candidate = text.substring(start, end + 1);
-      return JSON.parse(candidate);
-    } catch(e) {}
-  }
-  
-  return null;
-}
-
-// Gerar IPS
+/* ═══════════════════════════════════════════════════
+   GERAR IPS
+═══════════════════════════════════════════════════ */
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
-  const apiKey = getApiKey();
-  
-  if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
-  if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
-  
-  setOverlay(true, 'IA analisando...');
-  
+  const apiKey   = getApiKey();
+
+  if (!anamnese) { setStatus('❌ Cole a anamnese antes de gerar', 'err'); return; }
+  if (!apiKey)   { setStatus('❌ Configure e salve a chave API primeiro', 'err'); return; }
+
+  // CORREÇÃO #8: desabilitar botão para evitar duplo-clique / race condition
+  const btnGerar = document.getElementById('btnGerarIPS');
+  btnGerar.disabled = true;
+  App.gerando = true;
+
+  const mensagensOverlay = [
+    'IA analisando a anamnese...',
+    'Identificando perfil do cliente...',
+    'Estruturando recomendações...',
+    'Montando o documento IPS...',
+    'Quase pronto...'
+  ];
+  const overlayInterval = startRotatingMessages(mensagensOverlay, 3500);
+  setOverlay(true, mensagensOverlay[0]);
+
   try {
-    const prompt = `Você é um planejador financeiro sênior. Com base na anamnese abaixo, gere um plano IPS completo.
+    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos. Com base na anamnese abaixo, gere um plano IPS completo.
 
-IMPORTANTE: Responda APENAS com um JSON válido, SEM texto antes ou depois.
+IMPORTANTE: Responda APENAS com um JSON válido, sem texto antes ou depois, sem blocos de código markdown.
 
-Formato obrigatório:
+Formato obrigatório (todos os campos são obrigatórios):
 {
   "nome_cliente": "Nome completo do cliente",
-  "item1_sobre_cliente": "Aqui coloque um texto detalhado sobre o cliente, incluindo: Família & Pessoal, Negócios/Profissão, Fontes de Renda, Investimentos Atuais, Estilo de Vida, Objetivos Financeiros. Use subtítulos com ## e quebras de linha \\n\\n. Mínimo 500 caracteres.",
-  "item2_avaliacoes": "Aqui coloque a análise: Patrimônio e Alocação Atual, Capacidade de Aporte, Projeção de Crescimento. Use subtítulos com ## e quebras de linha. Mínimo 300 caracteres.",
-  "item3_recomendacoes": "Aqui coloque as recomendações: Gestão de Projetos de Vida, Construção de Renda Passiva, Alocação Estratégica Sugerida, Próximos Passos. Use subtítulos com ## e quebras de linha. Mínimo 400 caracteres."
+  "item1_sobre_cliente": "Texto detalhado sobre o cliente. Inclua: ## Família & Pessoal, ## Negócios/Profissão, ## Fontes de Renda, ## Investimentos Atuais, ## Estilo de Vida, ## Objetivos Financeiros. Use ## para subtítulos e \\n\\n para separar seções. Mínimo 500 caracteres.",
+  "item2_avaliacoes": "Análise financeira. Inclua: ## Patrimônio e Alocação Atual, ## Capacidade de Aporte, ## Projeção de Crescimento. Use ## para subtítulos. Mínimo 300 caracteres.",
+  "item3_recomendacoes": "Recomendações estratégicas. Inclua: ## Gestão de Projetos de Vida, ## Construção de Renda Passiva, ## Alocação Estratégica Sugerida, ## Próximos Passos. Use ## para subtítulos. Mínimo 400 caracteres."
 }
 
 ANAMNESE:
 ${anamnese}`;
 
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        contents: [{ parts: [{ text: prompt }] }], 
-        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 } 
-      })
-    });
-    
+    const resposta = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.5, maxOutputTokens: 8192 }
+        })
+      }
+    );
+
     const data = await resposta.json();
-    console.log('API Response:', data);
-    
-    if (data.error) throw new Error(data.error.message);
-    if (!data.candidates || !data.candidates[0]) throw new Error('API não retornou conteúdo');
-    
-    let rawText = data.candidates[0].content.parts[0].text;
-    console.log('Raw text:', rawText);
-    
-    // Extrair JSON usando função robusta
+
+    if (data.error) throw new Error(`Erro da API: ${data.error.message}`);
+    if (!data.candidates || !data.candidates[0]) throw new Error('A API não retornou conteúdo. Tente novamente.');
+
+    const rawText = data.candidates[0].content.parts[0].text;
+
     let dados = extractJSON(rawText);
-    
+
     if (!dados) {
-      // Se ainda não conseguiu, tenta criar um JSON manualmente a partir do texto
-      throw new Error('Não foi possível extrair o JSON da resposta. Tente novamente.');
+      throw new Error('Não foi possível interpretar a resposta da IA. Tente novamente ou simplifique a anamnese.');
     }
-    
-    ultimoJson = dados;
-    
-    // Garantir campos
-    ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
-    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
-    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
-    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || '## Gestão de Projetos\nInformações não disponíveis.\n\n## Renda Passiva\nInformações não disponíveis.\n\n## Alocação\nInformações não disponíveis.\n\n## Próximos Passos\nInformações não disponíveis.';
-    
+
+    // Garantir todos os campos com fallbacks explícitos
+    dados.nome_cliente         = safeString(dados.nome_cliente, 'Cliente');
+    dados.item1_sobre_cliente  = safeString(dados.item1_sobre_cliente,
+      '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.');
+    dados.item2_avaliacoes     = safeString(dados.item2_avaliacoes,
+      '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.');
+    dados.item3_recomendacoes  = safeString(dados.item3_recomendacoes,
+      '## Gestão de Projetos\nInformações não disponíveis.\n\n## Renda Passiva\nInformações não disponíveis.\n\n## Alocação\nInformações não disponíveis.\n\n## Próximos Passos\nInformações não disponíveis.');
+
+    App.setJson(dados);
+
+    // Renderizar campos editáveis
+    // CORREÇÃO #3: escapeHtml agora inclui aspas — seguro para usar em value="..."
     document.getElementById('editaveisContainer').innerHTML = `
-      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(ultimoJson.nome_cliente)}"></div>
-      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="20">${escapeHtml(ultimoJson.item1_sobre_cliente)}</textarea></div>
-      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="16">${escapeHtml(ultimoJson.item2_avaliacoes)}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="20">${escapeHtml(ultimoJson.item3_recomendacoes)}</textarea></div>
+      <div class="editable-section">
+        <label>📌 Nome do Cliente</label>
+        <input id="editNome" value="${escapeHtml(dados.nome_cliente)}" placeholder="Nome completo">
+      </div>
+      <div class="editable-section">
+        <label>👤 Sobre o Cliente</label>
+        <textarea id="editItem1" rows="20">${escapeHtml(dados.item1_sobre_cliente)}</textarea>
+      </div>
+      <div class="editable-section">
+        <label>📊 Avaliações</label>
+        <textarea id="editItem2" rows="16">${escapeHtml(dados.item2_avaliacoes)}</textarea>
+      </div>
+      <div class="editable-section">
+        <label>🎯 Recomendações Estratégicas</label>
+        <textarea id="editItem3" rows="20">${escapeHtml(dados.item3_recomendacoes)}</textarea>
+      </div>
     `;
-    
+
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com sucesso!', 'ok');
-    
-  } catch(error) {
-    console.error('Erro:', error);
-    setStatus(`❌ ${error.message}`, 'err');
+    document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setStatus('✅ IPS gerado com sucesso! Revise e edite antes de exportar.', 'ok');
+
+  } catch (error) {
+    console.error('Erro ao gerar IPS:', error);
+    setStatus(`❌ ${error.message}`, 'err', 15000); // erros ficam 15s visíveis
   } finally {
+    clearInterval(overlayInterval);
     setOverlay(false);
+    btnGerar.disabled = false;
+    App.gerando = false;
   }
 };
 
-// EXPORTAR COMO HTML
+/* ═══════════════════════════════════════════════════
+   EXPORTAR HTML
+   CORREÇÃO #4 + MELHORIA #11: sanitização + conversão de Markdown → HTML
+═══════════════════════════════════════════════════ */
 document.getElementById('btnExportarHTML').onclick = () => {
-  if(!ultimoJson) { 
-    setStatus('❌ Nenhum IPS gerado', 'err'); 
-    return; 
-  }
-  
-  const nome = document.getElementById('editNome')?.value || 'Cliente';
+  if (!App.hasJson()) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
+
+  const nome      = document.getElementById('editNome')?.value.trim() || 'Cliente';
+  const texto1    = document.getElementById('editItem1')?.value || '';
+  const texto2    = document.getElementById('editItem2')?.value || '';
+  const texto3    = document.getElementById('editItem3')?.value || '';
   const dataAtual = new Date().toLocaleDateString('pt-BR');
-  
+
+  // Converte Markdown para HTML seguro
+  const html1 = markdownToHtml(texto1);
+  const html2 = markdownToHtml(texto2);
+  const html3 = markdownToHtml(texto3);
+
+  // Texto fixo item4 (conteúdo interno confiável — escapa apenas para segurança)
+  const html4 = TEXTO_FIXO_ITEM4
+    .split('\n')
+    .map(line => line.trim() === '' ? '<br>' : `<p>${escapeHtml(line)}</p>`)
+    .join('\n');
+
   const conteudoHTML = `<!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>IPS - ${nome}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPS - ${escapeHtml(nome)}</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-  h1 { text-align: center; color: #d4a017; }
-  h2 { color: #1a3a5c; margin-top: 30px; border-bottom: 2px solid #d4a017; padding-bottom: 5px; }
-  .data { text-align: right; margin-bottom: 30px; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+  body { font-family: 'DM Sans', Arial, sans-serif; max-width: 820px; margin: 40px auto; padding: 20px 32px; line-height: 1.7; color: #1a1a2e; }
+  h1 { text-align: center; color: #d4a017; font-size: 22px; letter-spacing: 1px; margin-bottom: 4px; }
+  h2 { color: #1a3a5c; margin-top: 32px; border-bottom: 2px solid #d4a017; padding-bottom: 6px; font-size: 16px; text-transform: uppercase; letter-spacing: 0.8px; }
+  h3 { color: #1a3a5c; margin-top: 18px; font-size: 14px; }
+  p { margin: 6px 0; font-size: 14px; }
+  pre { font-family: 'Courier New', monospace; font-size: 12px; background: #f5f7fa; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; overflow-x: auto; line-height: 1.5; }
+  .header-meta { text-align: right; font-size: 13px; color: #718096; margin-bottom: 32px; }
+  .intro { background: #f5f7fa; border-left: 4px solid #d4a017; padding: 14px 18px; border-radius: 0 8px 8px 0; font-size: 14px; margin: 16px 0; }
+  @media print { body { margin: 20px; } }
 </style>
 </head>
 <body>
-  <h1>PLANO INICIAL</h1>
-  <h1 style="font-size: 24px;">${nome.toUpperCase()}</h1>
-  <div class="data">${dataAtual}</div>
-  
-  <h2>INTRODUÇÃO</h2>
-  <p>Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.</p>
-  
-  <h2>SOBRE O CLIENTE</h2>
-  ${document.getElementById('editItem1')?.value.replace(/\n/g, '<br>') || ''}
-  
-  <h2>AVALIAÇÕES</h2>
-  ${document.getElementById('editItem2')?.value.replace(/\n/g, '<br>') || ''}
-  
-  <h2>RECOMENDAÇÕES ESTRATÉGICAS</h2>
-  ${document.getElementById('editItem3')?.value.replace(/\n/g, '<br>') || ''}
-  
-  <h2>ANÁLISE, SELEÇÃO E MONITORAMENTO DE ATIVOS</h2>
-  ${TEXTO_FIXO_ITEM4.replace(/\n/g, '<br>')}
-  
-  <h2>POLÍTICA DE INVESTIMENTO</h2>
-  <pre>${TABELA_POLITICA}</pre>
+  <h1>PLANO INICIAL DE INVESTIMENTOS</h1>
+  <h1>${escapeHtml(nome.toUpperCase())}</h1>
+  <div class="header-meta">Emitido em ${dataAtual}</div>
+
+  <h2>Introdução</h2>
+  <div class="intro">Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.</div>
+
+  <h2>Sobre o Cliente</h2>
+  ${html1}
+
+  <h2>Avaliações</h2>
+  ${html2}
+
+  <h2>Recomendações Estratégicas</h2>
+  ${html3}
+
+  <h2>Análise, Seleção e Monitoramento de Ativos</h2>
+  ${html4}
+
+  <h2>Política de Investimento</h2>
+  <pre>${escapeHtml(TABELA_POLITICA)}</pre>
 </body>
 </html>`;
-  
-  const blob = new Blob([conteudoHTML], { type: 'text/html' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `IPS_${nome.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-  
+
+  downloadBlob(conteudoHTML, `IPS_${sanitizeFilename(nome)}.html`, 'text/html');
   setStatus('✅ HTML exportado com sucesso!', 'ok');
 };
 
-// EXPORTAR COMO TXT
+/* ═══════════════════════════════════════════════════
+   EXPORTAR TXT
+═══════════════════════════════════════════════════ */
 document.getElementById('btnExportarTXT').onclick = () => {
-  if(!ultimoJson) { 
-    setStatus('❌ Nenhum IPS gerado', 'err'); 
-    return; 
-  }
-  
-  const nome = document.getElementById('editNome')?.value || 'Cliente';
-  const dataAtual = new Date().toLocaleDateString('pt-BR');
-  
-  const conteudoTXT = `PLANO INICIAL
-${nome.toUpperCase()}
-${dataAtual}
+  if (!App.hasJson()) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
 
+  const nome      = document.getElementById('editNome')?.value.trim() || 'Cliente';
+  const texto1    = document.getElementById('editItem1')?.value || '';
+  const texto2    = document.getElementById('editItem2')?.value || '';
+  const texto3    = document.getElementById('editItem3')?.value || '';
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+  const separador = '\n' + '═'.repeat(60) + '\n';
+
+  const conteudoTXT =
+`PLANO INICIAL DE INVESTIMENTOS
+${nome.toUpperCase()}
+Emitido em: ${dataAtual}
+${separador}
 INTRODUÇÃO
 Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.
-
+${separador}
 SOBRE O CLIENTE
-${document.getElementById('editItem1')?.value || ''}
-
+${texto1}
+${separador}
 AVALIAÇÕES
-${document.getElementById('editItem2')?.value || ''}
-
+${texto2}
+${separador}
 RECOMENDAÇÕES ESTRATÉGICAS
-${document.getElementById('editItem3')?.value || ''}
-
+${texto3}
+${separador}
 ${TEXTO_FIXO_ITEM4}
-
+${separador}
 ${TABELA_POLITICA}`;
-  
-  const blob = new Blob([conteudoTXT], { type: 'text/plain;charset=utf-8' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `IPS_${nome.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-  
+
+  downloadBlob(conteudoTXT, `IPS_${sanitizeFilename(nome)}.txt`, 'text/plain;charset=utf-8');
   setStatus('✅ TXT exportado com sucesso!', 'ok');
 };
 
-// Theme Toggle
-document.getElementById('themeToggle').onclick = () => {
-  document.body.classList.toggle('light');
-  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-};
-
-// Carregar tema salvo
-if(localStorage.getItem('theme') === 'light') {
-  document.getElementById('themeToggle').click();
+/* ═══════════════════════════════════════════════════
+   UTILITÁRIOS DE EXPORT
+═══════════════════════════════════════════════════ */
+function downloadBlob(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href     = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Relógio
-function atualizarRelogio() { 
-  const now = new Date();
+function sanitizeFilename(nome) {
+  return nome.replace(/[^a-zA-ZÀ-ÿ0-9]/g, '_').substring(0, 50);
+}
+
+/* ═══════════════════════════════════════════════════
+   TEMA
+   CORREÇÃO #10: função isolada em vez de .click() artificial
+═══════════════════════════════════════════════════ */
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  } else {
+    document.body.classList.remove('light');
+    document.getElementById('themeToggle').textContent = '🌙';
+  }
+}
+
+document.getElementById('themeToggle').onclick = () => {
+  const isLight = document.body.classList.contains('light');
+  const novoTema = isLight ? 'dark' : 'light';
+  applyTheme(novoTema);
+  localStorage.setItem('theme', novoTema);
+};
+
+// Carrega tema salvo sem o hack do .click()
+applyTheme(localStorage.getItem('theme') || 'dark');
+
+/* ═══════════════════════════════════════════════════
+   RELÓGIO
+   CORREÇÃO #9: guarda ID do interval para possível limpeza futura
+═══════════════════════════════════════════════════ */
+function atualizarRelogio() {
+  const now     = new Date();
   const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
   document.getElementById('hDate').textContent = now.toLocaleString('pt-BR', options);
 }
 atualizarRelogio();
-setInterval(atualizarRelogio, 1000);
+App.clockInterval = setInterval(atualizarRelogio, 1000);
 </script>
 </body>
 </html>
