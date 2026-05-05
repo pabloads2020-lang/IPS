@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-
 <style>
 :root {
   --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
@@ -136,13 +135,13 @@ const MODELO_IPS = `PLANO INICIAL - Mateus Cesar
 
 # Sobre o Cliente
 ## Família & Pessoal
-Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança e eficiência administrativa...
+Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança...
 ## Negócios
 Médico com atuação em clínicas no Rio de Janeiro...
 ## Fontes de Renda
 Renda média mensal de R$ 18.800,00...
 ## Investimentos
-Patrimônio de R$ 12.000,00 em investimentos financeiros na corretora XP...
+Patrimônio de R$ 12.000,00 em investimentos financeiros...
 ## Estilo de vida
 Custo de vida fixo em torno de R$ 8,7 mil mensais...
 ## Objetivos
@@ -158,7 +157,7 @@ Gestão de Projetos de Vida: manter disciplina no fluxo de caixa...
 Construção de Renda Passiva: estruturação de carteira diversificada...`;
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
-function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 5000); }
+function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
 function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
 
 document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
@@ -175,31 +174,65 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   if(!apiKey) { setStatus('❌ Configure sua chave API Gemini', 'err'); return; }
   setOverlay(true, 'Enviando para Gemini AI...');
   try {
-    const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+    const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido SEM formatação adicional, SEM markdown, apenas o JSON com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
+
+    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
+      })
     });
+
     const data = await resposta.json();
+
+    if (data.error) {
+      throw new Error(`Erro da API: ${data.error.message || JSON.stringify(data.error)}`);
+    }
+
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
+      console.error('Resposta completa:', data);
+      throw new Error('A API retornou uma resposta inesperada. Verifique sua chave e tente novamente.');
+    }
+
     const texto = data.candidates[0].content.parts[0].text;
     const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('Resposta inválida da IA');
+    if (!jsonMatch) throw new Error('A IA não retornou um JSON válido');
+    
     ultimoJson = JSON.parse(jsonMatch[0]);
     renderizarEditavel(ultimoJson);
     gerarGrafico(ultimoJson);
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado! Edite se necessário e exporte.', 'ok');
-  } catch(e) { setStatus('❌ Erro: ' + e.message, 'err'); } finally { setOverlay(false); }
+    setStatus('✅ IPS gerado com sucesso! Edite se necessário e exporte.', 'ok');
+  } catch (error) {
+    console.error(error);
+    setStatus(`❌ Erro: ${error.message}`, 'err');
+  } finally {
+    setOverlay(false);
+  }
 };
 
 function renderizarEditavel(d) {
   const container = document.getElementById('editaveisContainer');
   container.innerHTML = `
-    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${d.nome_cliente || ''}"></div>
-    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${d.item1_sobre_cliente || ''}</textarea></div>
-    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${d.item2_avaliacoes || ''}</textarea></div>
-    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${d.item3_recomendacoes || ''}</textarea></div>
+    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(d.nome_cliente || '')}"></div>
+    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${escapeHtml(d.item1_sobre_cliente || '')}</textarea></div>
+    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${escapeHtml(d.item2_avaliacoes || '')}</textarea></div>
+    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${escapeHtml(d.item3_recomendacoes || '')}</textarea></div>
   `;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+    return c;
+  });
 }
 
 function gerarGrafico(d) {
@@ -213,24 +246,21 @@ function gerarGrafico(d) {
   for(let i=0; i<=anos; i++) {
     labels.push(i);
     if(i===0) dados.push(0);
-    else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(saldo); }
+    else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
   }
   const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
   if(chart) chart.destroy();
-  chart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] }, options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } } });
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] },
+    options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
+  });
 }
 
 document.getElementById('btnExportarDOCX').onclick = () => {
   if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
-  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente;
-  const conteudo = `
-    PLANO INICIAL - ${nome}\n\n
-    # Sobre o Cliente\n${document.getElementById('editItem1')?.value}\n\n
-    # Avaliações\n${document.getElementById('editItem2')?.value}\n\n
-    # Recomendações Estratégicas\n${document.getElementById('editItem3')?.value}\n\n
-    # Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n
-    # Política de Investimento\n[Tabela fixa do modelo - item 5]
-  `;
+  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
+  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${document.getElementById('editItem1')?.value || ''}\n\n# Avaliações\n${document.getElementById('editItem2')?.value || ''}\n\n# Recomendações Estratégicas\n${document.getElementById('editItem3')?.value || ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
   const blob = new Blob([conteudo], { type: 'application/msword' });
   saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.doc`);
   setStatus('✅ Documento exportado!', 'ok');
