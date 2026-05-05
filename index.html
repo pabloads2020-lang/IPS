@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPS Inteligente · Pleno Gestão</title>
+    <title>Gerador de IPS · Pleno Gestão</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     
+    <!-- Bibliotecas Essenciais -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
@@ -14,145 +15,177 @@
         :root { --bg:#0e1117; --card:#161b25; --input:#1c2333; --border:rgba(255,255,255,0.1); --text:#e8eaf0; --gold:#f5c842; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+        
         .header-info { width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin-bottom: 1rem; color: var(--gold); font-weight: 500; font-size: 0.9rem; }
         .card { width: 100%; max-width: 900px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        
         h2, h3 { color: var(--gold); margin-bottom: 1rem; }
         input, textarea { width: 100%; background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: inherit; margin-bottom: 10px; font-size: 1rem; }
         button { background: var(--gold); color: #000; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; margin-right: 5px; margin-top: 5px; }
         button:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        #loginArea { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; width: 100%; }
+        #mainApp { display: none; width: 100%; max-width: 900px; }
+        
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
         .overlay.show { display: flex; }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
         .editable-section { margin-top: 1.5rem; }
         .editable-section label { display: block; margin-bottom: 6px; color: var(--gold); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        @media (max-width: 600px) { body { padding: 1rem; } }
     </style>
 </head>
 <body>
 
 <div id="loginArea">
     <div class="card" style="text-align: center; max-width: 400px;">
-        <h2>Acesso Pleno Gestão</h2>
-        <input type="password" id="senhaInput" placeholder="Senha de acesso...">
+        <h2>Acesso Restrito</h2>
+        <input type="password" id="senhaInput" placeholder="Senha da Pleno...">
         <button onclick="verificarSenha()" style="width: 100%;">Entrar</button>
     </div>
 </div>
 
-<div id="mainApp" style="display: none; width: 100%; max-width: 900px;">
+<div id="mainApp">
     <div class="header-info">
         <span id="txtData"></span>
         <span id="txtRelogio"></span>
     </div>
 
     <div class="card">
-        <h3>1. Configuração da IA</h3>
-        <input type="password" id="apiKeyInput" placeholder="Cole sua Gemini API Key aqui">
-        <button onclick="salvarKey()">Salvar Configuração</button>
+        <h3>1. Configuração</h3>
+        <input type="password" id="apiKeyInput" placeholder="Sua Gemini API Key">
+        <button onclick="salvarKey()">Salvar Chave</button>
     </div>
 
     <div class="card">
-        <h3>2. Dados Brutos do Cliente</h3>
-        <textarea id="anamneseInput" rows="8" placeholder="Cole aqui as notas da reunião, conversas de WhatsApp ou rascunhos sobre o cliente..."></textarea>
+        <h3>2. Nova Anamnese (Input IA)</h3>
+        <textarea id="anamneseInput" rows="8" placeholder="Cole aqui os dados brutos, notas de reunião ou áudios transcritos do cliente..."></textarea>
         <button onclick="gerarIPS()">✨ Gerar IPS Personalizado</button>
     </div>
 
     <div id="resultArea" style="display: none;">
         <div class="card">
-            <h3>3. Revisão do Documento</h3>
+            <h3>3. Revisão do IPS Gerado</h3>
             <div id="editaveisContainer"></div>
             <canvas id="graficoPatrimonio" style="margin: 20px 0; background: #1c2333; border-radius: 8px; border: 1px solid #333;"></canvas>
-            <button onclick="exportarDOCX()" style="width: 100%; padding: 15px; font-size: 1.1rem;">📄 Exportar para Word (.docx)</button>
+            <button onclick="exportarDOCX()" style="width: 100%; padding: 15px; font-size: 1.1rem;">📄 Exportar Documento Word (.docx)</button>
         </div>
     </div>
 </div>
 
 <div class="overlay" id="overlay">
     <div class="spinner"></div>
-    <div id="overlayText" style="color: white; font-weight: 500;">A IA está redigindo o IPS...</div>
+    <div id="overlayText" style="color: white; font-weight: 500;">A IA está redigindo seu IPS...</div>
 </div>
 
 <script>
-// Textos Fixos da Pleno Gestão[cite: 1, 2]
-const TEXTO_INTRODUCAO = `Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste... (Texto completo conforme modelo)`;
-const TEXTO_FIXO_4 = `O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica... (Texto completo conforme modelo)`;
-const TEXTO_FIXO_5 = `A Política de Investimento será monitorada continuamente por nosso time, com eventuais ajustes ou rebalanceamentos notificados via relatório mensal... (Texto completo conforme modelo)`;
+// Senha de Acesso[cite: 1]
+const SENHA_CORRETA = "pleno2024";
+
+// Itens Fixos do IPS[cite: 1, 2]
+const TEXTO_INTRODUCAO = "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.\n\nNossa metodologia integra gestão e planejamento em um processo contínuo de análise, seleção e monitoramento de ativos.";
+const TEXTO_FIXO_4 = "O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão.";
+const TEXTO_FIXO_5 = "O portfólio será gerido seguindo os limites de concentração por classe de ativos e perfis de risco estabelecidos para a estratégia do cliente, garantindo diversificação e proteção patrimonial.";
 
 let chartInstance = null;
 
 function verificarSenha() {
-    if (document.getElementById('senhaInput').value === "pleno2024") {
+    if (document.getElementById('senhaInput').value === SENHA_CORRETA) {
         document.getElementById('loginArea').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        setInterval(() => {
-            const agora = new Date();
-            document.getElementById('txtData').textContent = agora.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
-            document.getElementById('txtRelogio').textContent = agora.toLocaleTimeString('pt-BR');
-        }, 1000);
-    } else { alert("Senha incorreta"); }
+        iniciarRelogio();
+    } else { alert("Senha incorreta!"); }
+}
+
+function iniciarRelogio() {
+    setInterval(() => {
+        const agora = new Date();
+        document.getElementById('txtData').textContent = agora.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        document.getElementById('txtRelogio').textContent = agora.toLocaleTimeString('pt-BR');
+    }, 1000);
 }
 
 function salvarKey() {
-    localStorage.setItem('gemini_key', document.getElementById('apiKeyInput').value.trim());
-    alert("Chave salva com sucesso!");
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (key) { localStorage.setItem('gemini_key', key); alert("Chave salva!"); }
 }
+
+window.onload = () => { 
+    const k = localStorage.getItem('gemini_key'); 
+    if(k) document.getElementById('apiKeyInput').value = k; 
+};
 
 async function gerarIPS() {
     const anamnese = document.getElementById('anamneseInput').value.trim();
     const key = localStorage.getItem('gemini_key');
-    if(!anamnese || !key) return alert("Preencha os dados do cliente e a API Key.");
+    if(!anamnese || !key) return alert("Por favor, insira a anamnese e configure sua API Key.");
 
     document.getElementById('overlay').classList.add('show');
 
-    const prompt = `Você é um especialista em Wealth Management da Pleno Gestão. 
-    Analise os dados brutos fornecidos e redija um IPS (Investment Policy Statement) formal e didático.
+    const prompt = `Você é um consultor sênior da Pleno Gestão. Interprete os dados da anamnese e redija um IPS profissional.
     
-    Siga rigorosamente esta estrutura de retorno em JSON:
+    REGRAS DE REDAÇÃO:
+    - Use um tom sofisticado, porém acessível[cite: 2].
+    - Na seção 'sobre', inclua subtemas: Família & Pessoal, Negócios, Fontes de Renda, Investimentos, Estilo de Vida e Objetivos[cite: 2].
+    - Na seção 'avaliacoes', analise: Patrimônio, Alocação e Renda[cite: 2].
+    
+    RETORNE APENAS JSON:
     {
-      "nome": "Nome Completo",
-      "sobre_cliente": "Texto detalhado incluindo subitens: Família & Pessoal, Negócios, Fontes de Renda, Investimentos, Estilo de Vida e Objetivos",
-      "avaliacoes": "Análise técnica sobre Patrimônio, Alocação, Renda e Crescimento",
-      "recomendacoes": "Sugestões sobre Gestão de Projetos, Renda Passiva, Ajuste de Passivo e Colchão em Dólar",
-      "dados_grafico": {"patrimonio_atual": 100000, "aporte_mensal": 5000, "anos": 30, "taxa_anual": 0.095}
+      "nome": "NOME DO CLIENTE",
+      "sobre": "Texto completo da seção 1",
+      "avaliacoes": "Texto completo da seção 2",
+      "recomendacoes": "Texto completo da seção 3",
+      "grafico": {"p_inicial": 50000, "aporte": 5000, "anos": 25}
     }
     
-    DADOS DO CLIENTE: ${anamnese}`;
+    DADOS: ${anamnese}`;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
+        
         const data = await response.json();
+        
+        if (!data.candidates) throw new Error("A IA não retornou dados. Verifique sua chave ou o conteúdo inserido.");
+
         const rawText = data.candidates[0].content.parts[0].text;
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        const res = JSON.parse(jsonMatch[0]);
+        const res = JSON.parse(rawText.match(/\{[\s\S]*\}/)[0]);
         
         document.getElementById('editaveisContainer').innerHTML = `
             <div class="editable-section"><label>Nome do Cliente</label><input id="valNome" value="${res.nome}"></div>
-            <div class="editable-section"><label>1. Sobre o Cliente (Personalizado)</label><textarea id="valSobre" rows="10">${res.sobre_cliente}</textarea></div>
-            <div class="editable-section"><label>2. Avaliações (Personalizado)</label><textarea id="valAval" rows="8">${res.avaliacoes}</textarea></div>
-            <div class="editable-section"><label>3. Recomendações Estratégicas (Personalizado)</label><textarea id="valRec" rows="8">${res.recomendacoes}</textarea></div>
+            <div class="editable-section"><label>1. Sobre o Cliente</label><textarea id="valSobre" rows="10">${res.sobre}</textarea></div>
+            <div class="editable-section"><label>2. Avaliações</label><textarea id="valAval" rows="8">${res.avaliacoes}</textarea></div>
+            <div class="editable-section"><label>3. Recomendações Estratégicas</label><textarea id="valRec" rows="8">${res.recomendacoes}</textarea></div>
         `;
         
-        atualizarGrafico(res.dados_grafico);
+        desenharGrafico(res.grafico.p_inicial, res.grafico.aporte, res.grafico.anos);
         document.getElementById('resultArea').style.display = 'block';
-    } catch (e) { alert("Erro ao processar com IA: " + e.message); }
+    } catch (e) { alert("Erro ao processar: " + e.message); }
     finally { document.getElementById('overlay').classList.remove('show'); }
 }
 
-function atualizarGrafico(d) {
+function desenharGrafico(p, a, anos) {
     const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
     if(chartInstance) chartInstance.destroy();
-    let labels = []; let valores = []; let saldo = d.patrimonio_atual;
-    for(let i=0; i<=d.anos; i++) {
+    let labels = []; let valores = []; let total = p;
+    for(let i=0; i<=anos; i++) {
         labels.push("Ano " + i);
-        valores.push(Math.round(saldo));
-        saldo = (saldo * (1 + d.taxa_anual)) + (d.aporte_mensal * 12);
+        valores.push(Math.round(total));
+        total = (total * 1.09) + (a * 12);
     }
     chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: labels, datasets: [{ label: 'Projeção de Patrimônio (R$)', data: valores, borderColor: '#f5c842', backgroundColor: 'rgba(245,200,66,0.1)', fill: true }] },
-        options: { scales: { y: { ticks: { color: '#aaa' } }, x: { ticks: { color: '#aaa' } } } }
+        data: {
+            labels: labels,
+            datasets: [{ label: 'Evolução Patrimonial (R$)', data: valores, borderColor: '#f5c842', backgroundColor: 'rgba(245,200,66,0.1)', fill: true, tension: 0.3 }]
+        },
+        options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#aaa' } }, x: { ticks: { color: '#aaa' } } } }
     });
 }
 
@@ -161,9 +194,9 @@ async function exportarDOCX() {
     const canvas = document.getElementById('graficoPatrimonio');
     const imgBuffer = await (await fetch(canvas.toDataURL('image/png'))).arrayBuffer();
 
-    const renderText = (text) => text.split('\n').map(line => new Paragraph({
-        children: [new TextRun({ text: line, size: 22 })],
-        spacing: { before: 100, after: 100 },
+    const formatarTexto = (txt) => txt.split('\n').filter(l => l.trim() !== "").map(linha => new Paragraph({
+        children: [new TextRun({ text: linha.trim(), size: 24 })],
+        spacing: { before: 120, after: 120 },
         alignment: AlignmentType.JUSTIFIED
     }));
 
@@ -174,29 +207,33 @@ async function exportarDOCX() {
                 new Paragraph({ text: document.getElementById('valNome').value.toUpperCase(), bold: true, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
                 
                 new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(TEXTO_INTRODUCAO),
+                ...formatarTexto(TEXTO_INTRODUCAO),
 
                 new Paragraph({ text: "1. Sobre o Cliente", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(document.getElementById('valSobre').value),
+                ...formatarTexto(document.getElementById('valSobre').value),
 
                 new Paragraph({ text: "2. Avaliações", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(document.getElementById('valAval').value),
+                ...formatarTexto(document.getElementById('valAval').value),
 
-                new Paragraph({ children: [new ImageRun({ data: imgBuffer, transformation: { width: 500, height: 250 } })], alignment: AlignmentType.CENTER }),
+                new Paragraph({
+                    children: [ new ImageRun({ data: imgBuffer, transformation: { width: 550, height: 280 } }) ],
+                    alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 }
+                }),
 
                 new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(document.getElementById('valRec').value),
+                ...formatarTexto(document.getElementById('valRec').value),
 
-                new Paragraph({ text: "4. Análise, Seleção e Monitoramento", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(TEXTO_FIXO_4),
+                new Paragraph({ text: "4. Análise e Monitoramento", heading: HeadingLevel.HEADING_2 }),
+                ...formatarTexto(TEXTO_FIXO_4),
 
                 new Paragraph({ text: "5. Política de Investimento", heading: HeadingLevel.HEADING_2 }),
-                ...renderText(TEXTO_FIXO_5)
+                ...formatarTexto(TEXTO_FIXO_5)
             ]
         }]
     });
 
-    Packer.toBlob(doc).then(blob => saveAs(blob, `IPS_Pleno_${document.getElementById('valNome').value}.docx`));
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `IPS_Pleno_${document.getElementById('valNome').value.replace(/\s+/g,'_')}.docx`);
 }
 </script>
 </body>
