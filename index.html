@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
 <style>
 :root {
   --bg: #0e1117; --bg2: #161b25; --bg3: #1c2333;
@@ -20,7 +21,7 @@
   --header-bg: #161b25; --header-border: rgba(255,255,255,0.07);
   --card-bg: #161b25; --card-border: rgba(255,255,255,0.07);
   --input-bg: #1c2333; --input-border: rgba(255,255,255,0.13);
-  --debug-bg: #1c2333; --overlay-bg: rgba(14,17,23,.88);
+  --overlay-bg: rgba(14,17,23,.88);
   --footer-border: rgba(255,255,255,0.07);
   --result-item-bg: #1c2333;
 }
@@ -35,7 +36,7 @@ body.light {
   --header-bg: #ffff; --header-border: rgba(0,0,0,0.08);
   --card-bg: #ffff; --card-border: rgba(0,0,0,0.08);
   --input-bg: #ffff; --input-border: #e2e8f0;
-  --debug-bg: #f7fafc; --overlay-bg: rgba(255,255,255,.95);
+  --overlay-bg: rgba(255,255,255,.95);
   --footer-border: rgba(0,0,0,0.08);
   --result-item-bg: #f7fafc;
 }
@@ -112,8 +113,8 @@ textarea:focus { border-color: var(--gold); outline: none; }
   </div>
 
   <div class="card">
-    <div class="card-title">📝 Anamnese do Cliente <span>Cole o texto da reunião (bagunçado ou estruturado)</span></div>
-    <textarea id="anamneseInput" rows="8" placeholder="Ex: Maria Manuela, 33 anos, publicitária, trabalha no supermercado da família..."></textarea>
+    <div class="card-title">📝 Anamnese do Cliente</div>
+    <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião com o cliente..."></textarea>
     <div class="button-group">
       <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
       <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
@@ -123,7 +124,7 @@ textarea:focus { border-color: var(--gold); outline: none; }
 
   <div id="resultArea" style="display:none;">
     <div class="card">
-      <div class="card-title">✏️ Edite o conteúdo gerado (se necessário)</div>
+      <div class="card-title">✏️ Edite o conteúdo gerado</div>
       <div id="editaveisContainer"></div>
       <canvas id="graficoPatrimonio" style="max-height: 300px; margin: 1rem 0;"></canvas>
       <button class="btn btn-gold" id="btnExportarDOCX">📄 Exportar para DOCX</button>
@@ -131,58 +132,77 @@ textarea:focus { border-color: var(--gold); outline: none; }
   </div>
 </main>
 
-<footer class="footer">IA treinada com o modelo de IPS · Chave salva localmente · Dados 100% privados</footer>
+<footer class="footer">IA treinada com o modelo Pleno · Dados 100% privados · Exporta DOCX profissional</footer>
 
 <script>
+const TEXTO_FIXO_ITEM4 = `# Análise, Seleção e Monitoramento de Ativos
+
+O processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.
+
+## Títulos Públicos:
+Analisamos o duration e eventuais distorções entre o valor de mercado e as projeções do cenário-base, buscando oportunidades de reprecificação em títulos prefixados e indexados. Já para a parcela pós-fixada, a alocação é dimensionada estrategicamente para atender aos objetivos de liquidez da carteira.
+
+## Títulos Privados:
+Validamos o rating do emissor através de uma análise própria baseada nos 5 C's do crédito e em testes de estresse para cenários adversos. A seleção final prioriza a melhor relação risco-retorno, considerando duration, liquidez e eficiência tributária, sempre em estrita conformidade com a Política de Investimento.
+
+## Cotas de Fundos:
+A seleção de fundos integra análises qualitativas — focadas na experiência da equipe e no histórico da gestora sob estresse — e quantitativas, que utilizam os índices de Sharpe e Treynor para avaliar a eficiência.
+
+## Ações:
+A seleção de ações combina análise fundamentalista — avaliando indicadores operacionais (como o ROE), múltiplos de mercado e forças competitivas — com análise técnica para a definição do timing de entrada.
+
+**Importante:** Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
+
+const TABELA_POLITICA = `# Política de Investimento
+
+| Produto | Mínimo | Máximo |
+|---------|--------|--------|
+| Títulos Financeiros: CDB / Compromissada / LCI / LCA / LF sênior | 0,0% | 40,0% |
+| Emissor investment grade com prazo de até 3 anos | 0,0% | 10,0% |
+| Emissor non investment grade com prazo até 3 anos | 0,0% | 10,0% |
+| Emissor investment grade, acima de 3 anos | 0,0% | 10,0% |
+| Emissor non investment grade, acima de 3 anos | 0,0% | 10,0% |
+| LF subordinada e subordinada híbrida | 0,0% | 40,0% |
+| Títulos Públicos | 2,0% | 100,0% |
+| LFT | 2,0% | 90,0% |
+| Títulos não financeiros: Debêntures / CRI / CRA etc | 0,0% | 40,0% |
+| Ações e Commodities | 10,0% | 80,0% |
+| Ações | 10,0% | 50,0% |
+| Ouro | 0,0% | 30,0% |
+| Derivativos Listados em Bolsa | 0,0% | 10,0% |
+| COE | 0,0% | 20,0% |
+| Fundos Estruturados | 0,0% | 50,0% |
+| FIP | 0,0% | 20,0% |
+| FII de incorporação | 0,0% | 20,0% |
+| Outros FIIs | 0,0% | 20,0% |`;
+
 const MODELO_IPS = `PLANO INICIAL - Mateus Cesar
 
 # Introdução
-
-Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.
+Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste...
 
 # Sobre o Cliente
-
 ## Família & Pessoal
-
-Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança e eficiência administrativa, reflexo de sua experiência familiar com o empreendedorismo e a gestão de negócios. Com um estilo de vida focado no desenvolvimento profissional e pessoal, ele reside no Rio de Janeiro, onde divide sua rotina entre os atendimentos em clínicas e o convívio com os pais em João Pessoa, priorizando atualmente a recapitalização financeira e a quitação de passivos estruturais para viabilizar o sonho do consultório próprio.
-
+Mateus, médico formado em 2020, tem 31 anos, é solteiro...
 ## Negócios
-
-Médico com atuação em clínicas no Rio de Janeiro e atendimentos esporádicos em João Pessoa, Mateus consolidou sua trajetória profissional investindo continuamente em sua qualificação, tendo concluído sua pós-graduação em 2022. Atualmente, integra a estrutura de atendimento clínico e detém uma participação de 20% em uma sociedade de um equipamento médico de alta tecnologia.
-
+Médico com atuação em clínicas no Rio de Janeiro...
 ## Fontes de Renda
-
-A estrutura de rendimentos de Mateus é composta por múltiplas frentes de atuação médica, apresentando uma média de ganhos mensais recorrentes de aproximadamente R$ 18.800,00. Essa receita é distribuída entre atendimentos em diferentes unidades (CGS e CGC) e consultas em João Pessoa (JP), demonstrando uma diversificação importante em suas fontes de receita profissional.
-
+Renda média mensal de R$ 18.800,00...
 ## Investimentos
-
-O patrimônio de Mateus está atualmente concentrado em ativos produtivos e no início de sua formação de reserva financeira, contando com R$ 12.000,00 alocados em investimentos financeiros na corretora XP. Além disso, ele detém uma participação societária de 20% em um equipamento médico de alta tecnologia, investimento avaliado em R$ 80.000,00.
-
+Patrimônio de R$ 12.000,00 em investimentos financeiros...
 ## Estilo de vida
-
-Com um perfil essencialmente caseiro e equilibrado, Mateus mantém um custo de vida fixo em torno de R$ 8,7 mil mensais e custos variáveis em torno de R$ 4 mil, refletindo uma rotina voltada ao desenvolvimento profissional e ao convívio social próximo. Suas preferências de lazer incluem idas ao cinema, eventos com amigos, passeios com seu cachorro e a prática religiosa, além da dedicação ao seu hobby de antiquário online.
-
+Custo de vida fixo em torno de R$ 8,7 mil mensais...
 ## Objetivos
-
-Mateus busca consolidar sua autonomia profissional por meio da estruturação de seu consultório próprio, integrando sua expertise médica a uma gestão financeira eficiente e segura. No curto e médio prazo, sua prioridade absoluta é a recapitalização e a liquidação de passivos estruturais, visando fortalecer sua base financeira para futuros investimentos imobiliários.
+Busca consolidar sua autonomia profissional...
 
 # Avaliações
-
-**Patrimônio:** O patrimônio de Mateus é composto por R$ 12 mil em investimentos financeiros líquidos e a participação societária no maquinário médico.
-
-**Alocação Atual:** O portfólio de ativos líquidos de Mateus totaliza R$ 12 mil, com alocação integral em fundos de renda fixa pós-fixada.
-
-**Renda:** Mateus apresenta uma renda mensal recorrente média de R$ 18.800,00, proveniente de sua atuação médica diversificada.
-
-**Crescimento Patrimonial:** Com aporte médio de R$ 6.000/mês, prazo de 34 anos, retorno bruto de 9,5% a.a. e inflação de 4,5% a.a., projeta-se um saldo significativo no longo prazo.
-
-**Aposentadoria:** Com uma perspectiva favorável, a meta de independência financeira é perfeitamente atingível, assegurando um patrimônio protegido da inflação.
+Patrimônio: R$ 12 mil em investimentos líquidos...
+Alocação atual: 100% renda fixa pós-fixada...
+Crescimento patrimonial: aporte médio de R$ 6.000/mês, prazo 34 anos, retorno bruto 9,5% a.a., inflação 4,5% a.a.
 
 # Recomendações estratégicas
-
-**Gestão de Projetos de Vida (Curto/Médio Prazo):** Recomenda-se a manutenção da disciplina na gestão do fluxo de caixa, priorizando o excedente operacional para o processo de recapitalização.
-
-**Construção de Renda Passiva (Longo Prazo):** O objetivo central é a estruturação de uma carteira diversificada que, no longo prazo, seja capaz de gerar um fluxo de caixa sólido.`;
+Gestão de Projetos de Vida: manter disciplina no fluxo de caixa...
+Construção de Renda Passiva: estruturação de carteira diversificada...`;
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
@@ -205,7 +225,7 @@ function safeString(value, defaultValue = '') {
 
 document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
 document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
-function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave válida'; el.className = 'api-status'; } }
+function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave'; el.className = 'api-status'; } }
 updateApiStatus();
 
 let ultimoJson = null, chart = null;
@@ -216,56 +236,66 @@ document.getElementById('btnLimpar').onclick = () => {
   document.getElementById('statusMsg').classList.remove('show');
   if(chart) { chart.destroy(); chart = null; }
   ultimoJson = null;
-  setStatus('🧹 Texto limpo. Pronto para nova anamnese.', 'ok');
+  setStatus('🧹 Pronto para novo cliente', 'ok');
 };
 
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
   const apiKey = getApiKey();
-  if(!anamnese) { setStatus('❌ Cole a anamnese do cliente primeiro', 'err'); return; }
-  if(!apiKey) { setStatus('❌ Configure sua chave API Gemini', 'err'); return; }
-  setOverlay(true, 'Enviando para Gemini AI...');
+  if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
+  if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
+  setOverlay(true, 'IA analisando...');
   try {
-    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
-
-Abaixo está um EXEMPLO DE IPS EXCELENTE que deve ser usado como REFERÊNCIA de qualidade, profundidade, estrutura, estilo e tom:
+    const prompt = `Você é um planejador financeiro sênior da Pleno. Use este exemplo como REFERÊNCIA de qualidade e estrutura:
 
 ${MODELO_IPS}
 
-INSTRUÇÕES RIGOROSAS:
-1. Gere um IPS COMPLETO e PERSONALIZADO para o cliente descrito na anamnese.
-2. SIGA EXATAMENTE a mesma estrutura, nível de detalhe e riqueza do exemplo.
-3. Item 1 - Sobre o Cliente: use subtópicos ## Família & Pessoal, ## Negócios, ## Fontes de Renda, ## Investimentos, ## Estilo de vida, ## Objetivos.
-4. Item 2 - Avaliações: inclua Patrimônio, Alocação Atual, Renda, Crescimento Patrimonial, Aposentadoria.
-5. Item 3 - Recomendações estratégicas: Gestão de Projetos de Vida, Construção de Renda Passiva.
-6. Extraia números para o gráfico.
-7. Retorne SOMENTE JSON com campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.
+Gere um NOVO IPS completo e personalizado com base na anamnese abaixo. Siga EXATAMENTE a mesma estrutura (subtópicos, detalhamento, linguagem profissional). Retorne SOMENTE JSON com: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.
 
-ANAMNESE:
+Anamnese:
 ${anamnese}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
     });
-
     const data = await resposta.json();
     if (data.error) throw new Error(data.error.message);
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Resposta inválida');
-
     const texto = data.candidates[0].content.parts[0].text;
     const jsonMatch = texto.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('JSON não encontrado');
-    
     ultimoJson = JSON.parse(jsonMatch[0]);
-    renderizarEditavel(ultimoJson);
-    gerarGrafico(ultimoJson);
+    
+    document.getElementById('editaveisContainer').innerHTML = `
+      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
+      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
+      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+    `;
+    
+    const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
+    const anos = parseInt(ultimoJson.periodo_anos) || 30;
+    const retorno = parseFloat(ultimoJson.retorno_bruto) / 100 || 0.095;
+    const inflacao = parseFloat(ultimoJson.inflacao) / 100 || 0.045;
+    const txReal = (1+retorno)/(1+inflacao)-1;
+    let saldo = 0;
+    const labels = [], dados = [];
+    for(let i=0; i<=anos; i++) {
+      labels.push(i);
+      if(i===0) dados.push(0);
+      else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
+    }
+    const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] },
+      options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
+    });
+    
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado!', 'ok');
+    setStatus('✅ IPS gerado! Edite se necessário.', 'ok');
   } catch (error) {
     setStatus(`❌ ${error.message}`, 'err');
   } finally {
@@ -273,44 +303,62 @@ ${anamnese}`;
   }
 };
 
-function renderizarEditavel(d) {
-  document.getElementById('editaveisContainer').innerHTML = `
-    <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(d.nome_cliente))}"></div>
-    <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(d.item1_sobre_cliente))}</textarea></div>
-    <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(d.item2_avaliacoes))}</textarea></div>
-    <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(d.item3_recomendacoes))}</textarea></div>
-  `;
-}
-
-function gerarGrafico(d) {
-  const aporte = parseFloat(d.aporte_mensal) || 5000;
-  const anos = parseInt(d.periodo_anos) || 30;
-  const retorno = parseFloat(d.retorno_bruto) / 100 || 0.095;
-  const inflacao = parseFloat(d.inflacao) / 100 || 0.045;
-  const txReal = (1+retorno)/(1+inflacao)-1;
-  let saldo = 0;
-  const labels = [], dados = [];
-  for(let i=0; i<=anos; i++) {
-    labels.push(i);
-    if(i===0) dados.push(0);
-    else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
-  }
-  const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
-  if(chart) chart.destroy();
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] },
-    options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
-  });
-}
-
-document.getElementById('btnExportarDOCX').onclick = () => {
+document.getElementById('btnExportarDOCX').onclick = async () => {
   if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
-  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
-  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${document.getElementById('editItem1')?.value || ''}\n\n# Avaliações\n${document.getElementById('editItem2')?.value || ''}\n\n# Recomendações Estratégicas\n${document.getElementById('editItem3')?.value || ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
-  const blob = new Blob([conteudo], { type: 'application/msword' });
-  saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.doc`);
-  setStatus('✅ Exportado!', 'ok');
+  setOverlay(true, 'Gerando DOCX profissional...');
+  try {
+    const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
+    const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    
+    // Capturar gráfico como imagem
+    const canvas = document.getElementById('graficoPatrimonio');
+    const imagemURL = canvas.toDataURL('image/png');
+    const imagemBlob = await (await fetch(imagemURL)).blob();
+    
+    const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, VerticalAlign, HeadingLevel } = docx;
+    
+    const doc = new Document({
+      styles: {
+        default: { document: { run: { font: "Times New Roman", size: 24 } } },
+        paragraphStyles: [{ id: "Title", name: "Title", basedOn: "Normal", run: { size: 44, bold: true, color: "1a3a5c" }, paragraph: { spacing: { after: 200 } } }]
+      },
+      sections: [{
+        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        children: [
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44, color: "1a3a5c" })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: nome, bold: true, size: 32 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.", size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Avaliações", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new ImageRun({ data: imagemBlob, transformation: { width: 500, height: 300 } })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: "# Recomendações Estratégicas", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem3')?.value || '', size: 24 })] }),
+          new Paragraph({ children: [] }),
+          ...TEXTO_FIXO_ITEM4.split('\n').filter(p => p.trim()).map(p => new Paragraph({ children: [new TextRun({ text: p, size: 24, bold: p.startsWith('#') })] })),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: TABELA_POLITICA, size: 22, font: "Courier New" })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: `João Pessoa, ${dataAtual}`, size: 24 })] })
+        ]
+      }]
+    });
+    
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.docx`);
+    setStatus('✅ DOCX profissional gerado!', 'ok');
+  } catch (error) {
+    setStatus(`❌ Erro ao gerar DOCX: ${error.message}`, 'err');
+  } finally {
+    setOverlay(false);
+  }
 };
 
 document.getElementById('themeToggle').onclick = () => {
