@@ -178,7 +178,16 @@ const TABELA_POLITICA = `# Política de Investimento
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
-function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
+function setOverlay(show, txt) { 
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  if(show) {
+    overlay.classList.add('show');
+    if(txt && overlayText) overlayText.textContent = txt;
+  } else {
+    overlay.classList.remove('show');
+  }
+}
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -195,13 +204,36 @@ function safeString(value, defaultValue = '') {
   return String(value);
 }
 
-document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
-document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
-function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave'; el.className = 'api-status'; } }
+// API Key handlers
+document.getElementById('btnSalvarKey').onclick = () => { 
+  const val = document.getElementById('apiKeyInput').value.trim(); 
+  if(val) localStorage.setItem('gemini_api_key', val); 
+  updateApiStatus(); 
+};
+
+document.getElementById('apiEye').onclick = () => { 
+  const inp = document.getElementById('apiKeyInput'); 
+  inp.type = inp.type === 'password' ? 'text' : 'password'; 
+};
+
+function updateApiStatus() { 
+  const key = getApiKey(); 
+  const el = document.getElementById('apiStatus'); 
+  if(key && key.startsWith('AIza')) { 
+    el.textContent = '✅ Chave salva'; 
+    el.className = 'api-status valid'; 
+    document.getElementById('apiKeyInput').value = key; 
+  } else { 
+    el.textContent = '⚠️ Nenhuma chave'; 
+    el.className = 'api-status'; 
+  } 
+}
 updateApiStatus();
 
-let ultimoJson = null, chart = null;
+let ultimoJson = null;
+let chart = null;
 
+// Limpar
 document.getElementById('btnLimpar').onclick = () => {
   document.getElementById('anamneseInput').value = '';
   document.getElementById('resultArea').style.display = 'none';
@@ -211,63 +243,59 @@ document.getElementById('btnLimpar').onclick = () => {
   setStatus('🧹 Pronto para novo cliente', 'ok');
 };
 
+// Gerar IPS
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
   const apiKey = getApiKey();
+  
   if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
   if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
+  
   setOverlay(true, 'IA analisando...');
+  
   try {
-    // PROMPT QUE FORÇA JSON PURO
-    const prompt = `Responda APENAS com um JSON válido. Nada de texto antes ou depois. Use aspas duplas.
+    const prompt = `Responda APENAS com um JSON válido. Use aspas duplas.
 
 {
-  "nome_cliente": "João Silva",
-  "item1_sobre_cliente": "## Família & Pessoal\\nJoão tem 35 anos, casado, 2 filhos...\\n\\n## Negócios\\nEmpresário do ramo de tecnologia...\\n\\n## Fontes de Renda\\nRenda mensal de R$ 25.000...\\n\\n## Investimentos Atuais\\nPatrimônio de R$ 150.000...\\n\\n## Estilo de Vida\\nCusto mensal de R$ 12.000...\\n\\n## Objetivos\\nAposentadoria aos 60 anos...",
-  "item2_avaliacoes": "## Patrimônio\\nPatrimônio atual de R$ 150.000...\\n\\n## Capacidade de Aporte\\nCapacidade de poupança mensal de R$ 13.000...\\n\\n## Projeção\\nCom aportes mensais de R$ 13.000 por 25 anos...",
-  "item3_recomendacoes": "## Gestão de Projetos\\nEstruturar reserva de emergência...\\n\\n## Renda Passiva\\nAlocar em ativos que gerem fluxo de caixa...\\n\\n## Alocação Estratégica\\n60% renda fixa, 40% variável...\\n\\n## Próximos Passos\\nReunião mensal de acompanhamento...",
-  "patrimonio": 150000,
-  "renda_mensal": 25000,
-  "aporte_mensal": 13000,
-  "periodo_anos": 25,
-  "retorno_bruto": 10.5,
+  "nome_cliente": "Nome do Cliente",
+  "item1_sobre_cliente": "## Família & Pessoal\\n...\\n\\n## Negócios\\n...\\n\\n## Fontes de Renda\\n...\\n\\n## Investimentos Atuais\\n...\\n\\n## Estilo de Vida\\n...\\n\\n## Objetivos\\n...",
+  "item2_avaliacoes": "## Patrimônio\\n...\\n\\n## Capacidade de Aporte\\n...\\n\\n## Projeção\\n...",
+  "item3_recomendacoes": "## Gestão de Projetos\\n...\\n\\n## Renda Passiva\\n...\\n\\n## Alocação Estratégica\\n...\\n\\n## Próximos Passos\\n...",
+  "patrimonio": 0,
+  "renda_mensal": 0,
+  "aporte_mensal": 5000,
+  "periodo_anos": 30,
+  "retorno_bruto": 9.5,
   "inflacao": 4.5
 }
 
-Agora gere o JSON para este cliente: ${anamnese}`;
+Anamnese: ${anamnese}`;
 
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }], 
-        generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: "application/json" } 
+        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } 
       })
     });
     
-    const data = await resposta.json();
-    console.log('Resposta API:', data);
+    const data = await response.json();
+    console.log('API Response:', data);
     
     if (data.error) throw new Error(data.error.message);
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) throw new Error('API não retornou conteúdo');
+    if (!data.candidates || !data.candidates[0]) throw new Error('API não retornou conteúdo');
     
-    const texto = data.candidates[0].content.parts[0].text;
-    console.log('Texto bruto:', texto);
+    let rawText = data.candidates[0].content.parts[0].text;
+    console.log('Raw text:', rawText);
     
-    // Tenta fazer o parse direto - a IA já deve retornar JSON puro
-    let dados = null;
-    try {
-      dados = JSON.parse(texto);
-    } catch(e) {
-      // Se falhar, tenta extrair com regex
-      const jsonMatch = texto.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
-      dados = JSON.parse(jsonMatch[0]);
-    }
+    // Extract JSON
+    let jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON não encontrado');
     
-    ultimoJson = dados;
+    ultimoJson = JSON.parse(jsonMatch[0]);
     
-    // Fallback para garantir campos
+    // Garantir campos
     ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
     ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '## Família & Pessoal\nInformações não disponíveis.\n\n## Negócios\nInformações não disponíveis.\n\n## Fontes de Renda\nInformações não disponíveis.\n\n## Investimentos Atuais\nInformações não disponíveis.\n\n## Estilo de Vida\nInformações não disponíveis.\n\n## Objetivos\nInformações não disponíveis.';
     ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '## Patrimônio\nInformações não disponíveis.\n\n## Capacidade de Aporte\nInformações não disponíveis.\n\n## Projeção\nInformações não disponíveis.';
@@ -278,11 +306,12 @@ Agora gere o JSON para este cliente: ${anamnese}`;
     ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
     ultimoJson.patrimonio = ultimoJson.patrimonio || 0;
     
+    // Renderizar editáveis
     document.getElementById('editaveisContainer').innerHTML = `
-      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
-      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="20">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
-      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="16">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="20">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(ultimoJson.nome_cliente)}"></div>
+      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="20">${escapeHtml(ultimoJson.item1_sobre_cliente)}</textarea></div>
+      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="16">${escapeHtml(ultimoJson.item2_avaliacoes)}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="20">${escapeHtml(ultimoJson.item3_recomendacoes)}</textarea></div>
     `;
     
     // Gráfico
@@ -292,23 +321,50 @@ Agora gere o JSON para este cliente: ${anamnese}`;
     const inflacao = parseFloat(ultimoJson.inflacao) / 100 || 0.045;
     const txReal = (1+retorno)/(1+inflacao)-1;
     let saldo = parseFloat(ultimoJson.patrimonio) || 0;
-    const labels = [], dados = [];
-    for(let i=0; i<=anos; i++) {
+    const labels = [];
+    const dados = [];
+    
+    for(let i = 0; i <= anos; i++) {
       labels.push(i);
-      if(i===0) dados.push(saldo);
-      else { saldo = (saldo + aporte*12) * (1+txReal); dados.push(Math.round(saldo)); }
+      if(i === 0) {
+        dados.push(saldo);
+      } else {
+        saldo = (saldo + aporte * 12) * (1 + txReal);
+        dados.push(Math.round(saldo));
+      }
     }
+    
     const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
     if(chart) chart.destroy();
     chart = new Chart(ctx, {
       type: 'line',
-      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false, borderWidth: 3 }] },
-      options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
+      data: { 
+        labels: labels, 
+        datasets: [{ 
+          label: 'Patrimônio Projetado (R$)', 
+          data: dados, 
+          borderColor: '#f5c842', 
+          tension: 0.3, 
+          fill: false, 
+          borderWidth: 3 
+        }] 
+      },
+      options: { 
+        responsive: true, 
+        plugins: { 
+          tooltip: { 
+            callbacks: { 
+              label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` 
+            } 
+          } 
+        } 
+      }
     });
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com sucesso!', 'ok');
-  } catch (error) {
+    setStatus('✅ IPS gerado!', 'ok');
+    
+  } catch(error) {
     console.error('Erro:', error);
     setStatus(`❌ ${error.message}`, 'err');
   } finally {
@@ -316,9 +372,15 @@ Agora gere o JSON para este cliente: ${anamnese}`;
   }
 };
 
+// Exportar DOCX
 document.getElementById('btnExportarDOCX').onclick = async () => {
-  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
+  if(!ultimoJson) { 
+    setStatus('❌ Nenhum IPS gerado', 'err'); 
+    return; 
+  }
+  
   setOverlay(true, 'Gerando DOCX...');
+  
   try {
     const nome = document.getElementById('editNome')?.value || 'Cliente';
     const dataAtual = new Date().toLocaleDateString('pt-BR');
@@ -358,9 +420,10 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
     });
     
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.docx`);
+    saveAs(blob, `IPS_${nome.replace(/ /g, '_')}.docx`);
     setStatus('✅ DOCX gerado!', 'ok');
-  } catch (error) {
+    
+  } catch(error) {
     console.error('Erro DOCX:', error);
     setStatus(`❌ Erro: ${error.message}`, 'err');
   } finally {
@@ -368,14 +431,26 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
   }
 };
 
+// Theme Toggle
 document.getElementById('themeToggle').onclick = () => {
   document.body.classList.toggle('light');
   localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
   document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
 };
-if(localStorage.getItem('theme') === 'light') document.getElementById('themeToggle').click();
-function atualizarRelogio() { document.getElementById('hDate').textContent = new Date().toLocaleString('pt-BR'); }
-atualizarRelogio(); setInterval(atualizarRelogio, 1000);
+
+// Carregar tema salvo
+if(localStorage.getItem('theme') === 'light') {
+  document.getElementById('themeToggle').click();
+}
+
+// Relógio
+function atualizarRelogio() { 
+  const now = new Date();
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+  document.getElementById('hDate').textContent = now.toLocaleString('pt-BR', options);
+}
+atualizarRelogio();
+setInterval(atualizarRelogio, 1000);
 </script>
 </body>
 </html>
