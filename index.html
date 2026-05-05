@@ -113,7 +113,7 @@ textarea:focus { border-color: var(--gold); outline: none; }
 
   <div class="card">
     <div class="card-title">📝 Anamnese do Cliente <span>Cole o texto da reunião (bagunçado ou estruturado)</span></div>
-    <textarea id="anamneseInput" rows="8" placeholder="Ex: João, 45 anos, empresário, casado, 2 filhos. Renda média de R$ 32 mil por mês. Patrimônio atual de R$ 250 mil em investimentos. Quer aposentar aos 65 com R$ 20 mil/mês. Tem financiamento imobiliário e quer fazer intercâmbio dos filhos..."></textarea>
+    <textarea id="anamneseInput" rows="8" placeholder="Ex: Maria Manuela, 33 anos, publicitária, trabalha no supermercado da família..."></textarea>
     <div class="button-group">
       <button class="btn btn-gold" id="btnGerarIPS">✨ Gerar IPS com IA</button>
       <button class="btn btn-ghost" id="btnLimpar">🗑️ Limpar</button>
@@ -136,38 +136,61 @@ textarea:focus { border-color: var(--gold); outline: none; }
 <script>
 const MODELO_IPS = `PLANO INICIAL - Mateus Cesar
 
+# Introdução
+
+Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.
+
 # Sobre o Cliente
+
 ## Família & Pessoal
-Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança...
+
+Mateus, médico formado em 2020, tem 31 anos, é solteiro e trilha uma carreira pautada pela busca de segurança e eficiência administrativa, reflexo de sua experiência familiar com o empreendedorismo e a gestão de negócios. Com um estilo de vida focado no desenvolvimento profissional e pessoal, ele reside no Rio de Janeiro, onde divide sua rotina entre os atendimentos em clínicas e o convívio com os pais em João Pessoa, priorizando atualmente a recapitalização financeira e a quitação de passivos estruturais para viabilizar o sonho do consultório próprio.
+
 ## Negócios
-Médico com atuação em clínicas no Rio de Janeiro...
+
+Médico com atuação em clínicas no Rio de Janeiro e atendimentos esporádicos em João Pessoa, Mateus consolidou sua trajetória profissional investindo continuamente em sua qualificação, tendo concluído sua pós-graduação em 2022. Atualmente, integra a estrutura de atendimento clínico e detém uma participação de 20% em uma sociedade de um equipamento médico de alta tecnologia.
+
 ## Fontes de Renda
-Renda média mensal de R$ 18.800,00...
+
+A estrutura de rendimentos de Mateus é composta por múltiplas frentes de atuação médica, apresentando uma média de ganhos mensais recorrentes de aproximadamente R$ 18.800,00. Essa receita é distribuída entre atendimentos em diferentes unidades (CGS e CGC) e consultas em João Pessoa (JP), demonstrando uma diversificação importante em suas fontes de receita profissional.
+
 ## Investimentos
-Patrimônio de R$ 12.000,00 em investimentos financeiros...
+
+O patrimônio de Mateus está atualmente concentrado em ativos produtivos e no início de sua formação de reserva financeira, contando com R$ 12.000,00 alocados em investimentos financeiros na corretora XP. Além disso, ele detém uma participação societária de 20% em um equipamento médico de alta tecnologia, investimento avaliado em R$ 80.000,00.
+
 ## Estilo de vida
-Custo de vida fixo em torno de R$ 8,7 mil mensais...
+
+Com um perfil essencialmente caseiro e equilibrado, Mateus mantém um custo de vida fixo em torno de R$ 8,7 mil mensais e custos variáveis em torno de R$ 4 mil, refletindo uma rotina voltada ao desenvolvimento profissional e ao convívio social próximo. Suas preferências de lazer incluem idas ao cinema, eventos com amigos, passeios com seu cachorro e a prática religiosa, além da dedicação ao seu hobby de antiquário online.
+
 ## Objetivos
-Busca consolidar sua autonomia profissional...
+
+Mateus busca consolidar sua autonomia profissional por meio da estruturação de seu consultório próprio, integrando sua expertise médica a uma gestão financeira eficiente e segura. No curto e médio prazo, sua prioridade absoluta é a recapitalização e a liquidação de passivos estruturais, visando fortalecer sua base financeira para futuros investimentos imobiliários.
 
 # Avaliações
-Patrimônio: R$ 12 mil em investimentos líquidos...
-Alocação atual: 100% renda fixa pós-fixada...
-Crescimento patrimonial: aporte médio de R$ 6.000/mês, prazo 34 anos, retorno bruto 9,5% a.a., inflação 4,5% a.a.
+
+**Patrimônio:** O patrimônio de Mateus é composto por R$ 12 mil em investimentos financeiros líquidos e a participação societária no maquinário médico.
+
+**Alocação Atual:** O portfólio de ativos líquidos de Mateus totaliza R$ 12 mil, com alocação integral em fundos de renda fixa pós-fixada.
+
+**Renda:** Mateus apresenta uma renda mensal recorrente média de R$ 18.800,00, proveniente de sua atuação médica diversificada.
+
+**Crescimento Patrimonial:** Com aporte médio de R$ 6.000/mês, prazo de 34 anos, retorno bruto de 9,5% a.a. e inflação de 4,5% a.a., projeta-se um saldo significativo no longo prazo.
+
+**Aposentadoria:** Com uma perspectiva favorável, a meta de independência financeira é perfeitamente atingível, assegurando um patrimônio protegido da inflação.
 
 # Recomendações estratégicas
-Gestão de Projetos de Vida: manter disciplina no fluxo de caixa...
-Construção de Renda Passiva: estruturação de carteira diversificada...`;
+
+**Gestão de Projetos de Vida (Curto/Médio Prazo):** Recomenda-se a manutenção da disciplina na gestão do fluxo de caixa, priorizando o excedente operacional para o processo de recapitalização.
+
+**Construção de Renda Passiva (Longo Prazo):** O objetivo central é a estruturação de uma carteira diversificada que, no longo prazo, seja capaz de gerar um fluxo de caixa sólido.`;
 
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
 function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
 
-// Função segura para escapar HTML (protegida contra null/undefined)
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
-  const s = String(str);
-  return s.replace(/[&<>]/g, function(m) {
+  return String(str).replace(/[&<>]/g, function(m) {
     if (m === '&') return '&amp;';
     if (m === '<') return '&lt;';
     if (m === '>') return '&gt;';
@@ -175,7 +198,6 @@ function escapeHtml(str) {
   });
 }
 
-// Função segura para obter valor string
 function safeString(value, defaultValue = '') {
   if (value === null || value === undefined) return defaultValue;
   return String(value);
@@ -188,7 +210,6 @@ updateApiStatus();
 
 let ultimoJson = null, chart = null;
 
-// Botão Limpar
 document.getElementById('btnLimpar').onclick = () => {
   document.getElementById('anamneseInput').value = '';
   document.getElementById('resultArea').style.display = 'none';
@@ -205,7 +226,23 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   if(!apiKey) { setStatus('❌ Configure sua chave API Gemini', 'err'); return; }
   setOverlay(true, 'Enviando para Gemini AI...');
   try {
-    const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido SEM formatação adicional, SEM markdown, apenas o JSON com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
+    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
+
+Abaixo está um EXEMPLO DE IPS EXCELENTE que deve ser usado como REFERÊNCIA de qualidade, profundidade, estrutura, estilo e tom:
+
+${MODELO_IPS}
+
+INSTRUÇÕES RIGOROSAS:
+1. Gere um IPS COMPLETO e PERSONALIZADO para o cliente descrito na anamnese.
+2. SIGA EXATAMENTE a mesma estrutura, nível de detalhe e riqueza do exemplo.
+3. Item 1 - Sobre o Cliente: use subtópicos ## Família & Pessoal, ## Negócios, ## Fontes de Renda, ## Investimentos, ## Estilo de vida, ## Objetivos.
+4. Item 2 - Avaliações: inclua Patrimônio, Alocação Atual, Renda, Crescimento Patrimonial, Aposentadoria.
+5. Item 3 - Recomendações estratégicas: Gestão de Projetos de Vida, Construção de Renda Passiva.
+6. Extraia números para o gráfico.
+7. Retorne SOMENTE JSON com campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.
+
+ANAMNESE:
+${anamnese}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -217,41 +254,31 @@ document.getElementById('btnGerarIPS').onclick = async () => {
     });
 
     const data = await resposta.json();
-
-    if (data.error) {
-      throw new Error(`Erro da API: ${data.error.message || JSON.stringify(data.error)}`);
-    }
-
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
-      console.error('Resposta completa:', data);
-      throw new Error('A API retornou uma resposta inesperada. Verifique sua chave e tente novamente.');
-    }
+    if (data.error) throw new Error(data.error.message);
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Resposta inválida');
 
     const texto = data.candidates[0].content.parts[0].text;
     const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('A IA não retornou um JSON válido');
+    if (!jsonMatch) throw new Error('JSON não encontrado');
     
     ultimoJson = JSON.parse(jsonMatch[0]);
     renderizarEditavel(ultimoJson);
     gerarGrafico(ultimoJson);
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com sucesso! Edite se necessário e exporte.', 'ok');
+    setStatus('✅ IPS gerado!', 'ok');
   } catch (error) {
-    console.error(error);
-    setStatus(`❌ Erro: ${error.message}`, 'err');
+    setStatus(`❌ ${error.message}`, 'err');
   } finally {
     setOverlay(false);
   }
 };
 
 function renderizarEditavel(d) {
-  const container = document.getElementById('editaveisContainer');
-  // Usando safeString para proteger contra valores nulos
-  container.innerHTML = `
-    <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(safeString(d.nome_cliente))}"></div>
-    <div class="editable-section"><label>👤 Sobre o Cliente (Item 1)</label><textarea id="editItem1" rows="12">${escapeHtml(safeString(d.item1_sobre_cliente))}</textarea></div>
-    <div class="editable-section"><label>📊 Avaliações (Item 2)</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(d.item2_avaliacoes))}</textarea></div>
-    <div class="editable-section"><label>🎯 Recomendações (Item 3)</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(d.item3_recomendacoes))}</textarea></div>
+  document.getElementById('editaveisContainer').innerHTML = `
+    <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(d.nome_cliente))}"></div>
+    <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(d.item1_sobre_cliente))}</textarea></div>
+    <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(d.item2_avaliacoes))}</textarea></div>
+    <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(d.item3_recomendacoes))}</textarea></div>
   `;
 }
 
@@ -278,16 +305,12 @@ function gerarGrafico(d) {
 }
 
 document.getElementById('btnExportarDOCX').onclick = () => {
-  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
-  const nomeInput = document.getElementById('editNome');
-  const nome = nomeInput ? nomeInput.value : (ultimoJson.nome_cliente || 'Cliente');
-  const item1Input = document.getElementById('editItem1');
-  const item2Input = document.getElementById('editItem2');
-  const item3Input = document.getElementById('editItem3');
-  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${item1Input ? item1Input.value : ''}\n\n# Avaliações\n${item2Input ? item2Input.value : ''}\n\n# Recomendações Estratégicas\n${item3Input ? item3Input.value : ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
+  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
+  const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
+  const conteudo = `PLANO INICIAL - ${nome}\n\n# Sobre o Cliente\n${document.getElementById('editItem1')?.value || ''}\n\n# Avaliações\n${document.getElementById('editItem2')?.value || ''}\n\n# Recomendações Estratégicas\n${document.getElementById('editItem3')?.value || ''}\n\n# Análise, Seleção e Monitoramento de Ativos\n[Texto fixo do modelo - item 4]\n\n# Política de Investimento\n[Tabela fixa do modelo - item 5]`;
   const blob = new Blob([conteudo], { type: 'application/msword' });
   saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.doc`);
-  setStatus('✅ Documento exportado!', 'ok');
+  setStatus('✅ Exportado!', 'ok');
 };
 
 document.getElementById('themeToggle').onclick = () => {
