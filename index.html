@@ -176,34 +176,6 @@ const TABELA_POLITICA = `# Política de Investimento
 | FII de incorporação | 0,0% | 20,0% |
 | Outros FIIs | 0,0% | 20,0% |`;
 
-const MODELO_IPS = `PLANO INICIAL - Mateus Cesar
-
-# Introdução
-Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste...
-
-# Sobre o Cliente
-## Família & Pessoal
-Mateus, médico formado em 2020, tem 31 anos, é solteiro...
-## Negócios
-Médico com atuação em clínicas no Rio de Janeiro...
-## Fontes de Renda
-Renda média mensal de R$ 18.800,00...
-## Investimentos
-Patrimônio de R$ 12.000,00 em investimentos financeiros...
-## Estilo de vida
-Custo de vida fixo em torno de R$ 8,7 mil mensais...
-## Objetivos
-Busca consolidar sua autonomia profissional...
-
-# Avaliações
-Patrimônio: R$ 12 mil em investimentos líquidos...
-Alocação atual: 100% renda fixa pós-fixada...
-Crescimento patrimonial: aporte médio de R$ 6.000/mês, prazo 34 anos, retorno bruto 9,5% a.a., inflação 4,5% a.a.
-
-# Recomendações estratégicas
-Gestão de Projetos de Vida: manter disciplina no fluxo de caixa...
-Construção de Renda Passiva: estruturação de carteira diversificada...`;
-
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 function setStatus(msg, tipo) { const el = document.getElementById('statusMsg'); el.innerHTML = msg; el.className = `status show status-${tipo}`; setTimeout(() => el.classList.remove('show'), 6000); }
 function setOverlay(show, txt) { document.getElementById('overlay').classList.toggle('show', show); if(txt) document.getElementById('overlayText').textContent = txt; }
@@ -248,26 +220,73 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   try {
     const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
 
-REFERÊNCIA de formato e qualidade (use como modelo, mas personalize com os dados do cliente abaixo):
-${MODELO_IPS}
+ATENÇÃO: Você DEVE gerar o IPS seguindo EXATAMENTE a estrutura de TÓPICOS E SUBTÓPICOS abaixo. NÃO resuma, NÃO omita seções. Cada tópico deve ser detalhado com pelo menos 3 parágrafos.
 
-AGORA, com base EXCLUSIVAMENTE na anamnese do cliente abaixo, gere um NOVO IPS completo e personalizado.
-Siga a MESMA estrutura do exemplo: Introdução (fale sobre a Pleno), Sobre o Cliente (detalhado), Avaliações (com números), Recomendações estratégicas.
+ESTRUTURA OBRIGATÓRIA (copie exatamente estes cabeçalhos):
 
-Você DEVE retornar UM ÚNICO OBJETO JSON válido, sem texto antes ou depois, com os campos:
-- nome_cliente (string)
-- item1_sobre_cliente (string com toda a seção "Sobre o Cliente" detalhada)
-- item2_avaliacoes (string com a seção "Avaliações" incluindo patrimônio, alocação e projeção)
-- item3_recomendacoes (string com a seção "Recomendações estratégicas")
-- patrimonio (número em reais)
-- renda_mensal (número em reais)
-- aporte_mensal (número em reais)
-- periodo_anos (número)
-- retorno_bruto (número percentual, ex: 9.5)
-- inflacao (número percentual, ex: 4.5)
+# Sobre o Cliente
 
-ANAMNESE DO CLIENTE:
-${anamnese}`;
+## Família & Pessoal
+[Detalhe: idade, estado civil, filhos, cidade onde mora, formação, estilo de vida]
+
+## Negócios / Profissão
+[Detalhe: profissão, tempo de atuação, especialidade, vínculos empregatícios ou autônomo, planos de carreira]
+
+## Fontes de Renda
+[Detalhe: renda mensal total, composição da renda, previsibilidade, estabilidade]
+
+## Investimentos Atuais
+[Detalhe: patrimônio financeiro atual, alocação por classe de ativo, rentabilidade histórica aproximada, instituições onde investe]
+
+## Estilo de Vida & Custo de Vida
+[Detalhe: custo de vida mensal, principais despesas, padrão de vida, dependentes econômicos]
+
+## Objetivos Financeiros
+[Detalhe: objetivos de curto, médio e longo prazo; prazo para cada objetivo; prioridade; sonhos específicos]
+
+# Avaliações
+
+## Patrimônio e Alocação Atual
+[Detalhe: valor do patrimônio, distribuição percentual por ativo, análise qualitativa da alocação]
+
+## Capacidade de Aporte
+[Detalhe: renda menos despesas = capacidade de aporte mensal, potencial de aumento futuro]
+
+## Projeção de Crescimento Patrimonial
+[Detalhe: Considerando aporte mensal de X, prazo de Y anos, rentabilidade bruta de Z% a.a. e inflação de W% a.a., o patrimônio real projetado é de R$...]
+
+# Recomendações Estratégicas
+
+## Gestão de Projetos de Vida
+[Detalhe: alinhamento dos objetivos com o planejamento financeiro, estratégias para cada objetivo]
+
+## Construção de Renda Passiva
+[Detalhe: estratégias para gerar renda passiva compatível com os objetivos do cliente]
+
+## Alocação Estratégica Sugerida
+[Detalhe: sugestão de alocação por classe de ativo com percentuais, justificativa baseada no perfil e objetivos]
+
+## Próximos Passos
+[Detalhe: ações imediatas, de curto e médio prazo para implementação das recomendações]
+
+Agora, com base na anamnese abaixo, gere um IPS COMPLETO seguindo ESTRITAMENTE a estrutura acima. Cada subtópico deve ser RICO em detalhes, com pelo menos 3 linhas. NÃO resuma.
+
+ANAMNESE:
+${anamnese}
+
+Após gerar os textos, retorne UM JSON com os seguintes campos:
+{
+  "nome_cliente": "Nome completo",
+  "item1_sobre_cliente": "texto completo da seção # Sobre o Cliente com todos os subtópicos",
+  "item2_avaliacoes": "texto completo da seção # Avaliações com todos os subtópicos",
+  "item3_recomendacoes": "texto completo da seção # Recomendações Estratégicas com todos os subtópicos",
+  "patrimonio": 0,
+  "renda_mensal": 0,
+  "aporte_mensal": 0,
+  "periodo_anos": 0,
+  "retorno_bruto": 0,
+  "inflacao": 0
+}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -276,31 +295,25 @@ ${anamnese}`;
     });
     
     const data = await resposta.json();
-    console.log('🔍 Resposta completa da API:', data);
+    console.log('🔍 Resposta completa:', data);
     
     if (data.error) throw new Error(data.error.message);
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) throw new Error('Resposta vazia da API');
     
-    const texto = data.candidates[0].content.parts[0].text;
-    console.log('🔍 Texto bruto retornado pela IA:', texto);
+    let texto = data.candidates[0].content.parts[0].text;
+    console.log('🔍 Texto bruto:', texto);
     
-    // Tenta extrair JSON mesmo com texto ao redor
     let jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      // Tenta encontrar algo que pareça JSON
-      const possibleJson = texto.substring(texto.indexOf('{'), texto.lastIndexOf('}') + 1);
-      if (possibleJson && possibleJson.length > 10) jsonMatch = [possibleJson];
-      else throw new Error('Não foi possível encontrar JSON na resposta da IA');
-    }
+    if (!jsonMatch) throw new Error('JSON não encontrado');
     
     ultimoJson = JSON.parse(jsonMatch[0]);
-    console.log('🔍 JSON parseado:', ultimoJson);
+    console.log('🔍 JSON:', ultimoJson);
     
-    // VALORES PADRÃO para evitar campos em branco
+    // Valores padrão
     ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
-    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || 'Informações do cliente não fornecidas pela IA. Verifique a anamnese e tente novamente.';
-    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || 'Avaliações não disponíveis.';
-    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || 'Recomendações não disponíveis.';
+    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || '### Família & Pessoal\nInformações não disponíveis.\n\n### Negócios\nInformações não disponíveis.\n\n### Fontes de Renda\nInformações não disponíveis.\n\n### Investimentos Atuais\nInformações não disponíveis.\n\n### Estilo de Vida\nInformações não disponíveis.\n\n### Objetivos\nInformações não disponíveis.';
+    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || '### Patrimônio\nInformações não disponíveis.\n\n### Capacidade de Aporte\nInformações não disponíveis.\n\n### Projeção\nInformações não disponíveis.';
+    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || '### Gestão de Projetos\nInformações não disponíveis.\n\n### Renda Passiva\nInformações não disponíveis.\n\n### Alocação\nInformações não disponíveis.\n\n### Próximos Passos\nInformações não disponíveis.';
     ultimoJson.patrimonio = ultimoJson.patrimonio || 0;
     ultimoJson.renda_mensal = ultimoJson.renda_mensal || 0;
     ultimoJson.aporte_mensal = ultimoJson.aporte_mensal || 5000;
@@ -308,15 +321,14 @@ ${anamnese}`;
     ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
     ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
     
-    // Preenche os campos editáveis
     document.getElementById('editaveisContainer').innerHTML = `
       <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
-      <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
-      <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações Estratégicas</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+      <div class="editable-section"><label>👤 Sobre o Cliente (tópico a tópico)</label><textarea id="editItem1" rows="20">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
+      <div class="editable-section"><label>📊 Avaliações (tópico a tópico)</label><textarea id="editItem2" rows="16">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações Estratégicas (tópico a tópico)</label><textarea id="editItem3" rows="20">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
     `;
     
-    // Gráfico de projeção patrimonial
+    // Gráfico
     const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
     const anos = parseInt(ultimoJson.periodo_anos) || 30;
     const retorno = parseFloat(ultimoJson.retorno_bruto) / 100 || 0.095;
@@ -338,56 +350,50 @@ ${anamnese}`;
     });
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado com sucesso! Você pode editar os campos antes de exportar.', 'ok');
+    setStatus('✅ IPS gerado com estrutura tópico a tópico!', 'ok');
   } catch (error) {
-    console.error('❌ Erro detalhado:', error);
-    setStatus(`❌ Erro: ${error.message}`, 'err');
+    console.error('❌ Erro:', error);
+    setStatus(`❌ ${error.message}`, 'err');
   } finally {
     setOverlay(false);
   }
 };
 
 document.getElementById('btnExportarDOCX').onclick = async () => {
-  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
-  setOverlay(true, 'Gerando arquivo DOCX profissional...');
+  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
+  setOverlay(true, 'Gerando DOCX...');
   try {
-    const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
-    const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-    
+    const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente;
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
     const canvas = document.getElementById('graficoPatrimonio');
-    const imagemURL = canvas.toDataURL('image/png');
-    const imagemBlob = await (await fetch(imagemURL)).blob();
+    const imagemBlob = await (await fetch(canvas.toDataURL('image/png'))).blob();
     
-    const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, VerticalAlign, HeadingLevel } = docx;
+    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } = docx;
     
     const doc = new Document({
-      styles: {
-        default: { document: { run: { font: "Times New Roman", size: 24 } } },
-        paragraphStyles: [{ id: "Title", name: "Title", basedOn: "Normal", run: { size: 44, bold: true, color: "1a3a5c" }, paragraph: { spacing: { after: 200 } } }]
-      },
       sections: [{
         properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
         children: [
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44, color: "1a3a5c" })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANO INICIAL", bold: true, size: 44 })] }),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: nome, bold: true, size: 32 })] }),
           new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: "# Introdução", bold: true, size: 32 })] }),
           new Paragraph({ children: [new TextRun({ text: "Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.", size: 24 })] }),
           new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: "# Sobre o Cliente", bold: true, size: 32 })] }),
           new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem1')?.value || '', size: 24 })] }),
           new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Avaliações", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: "# Avaliações", bold: true, size: 32 })] }),
           new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem2')?.value || '', size: 24 })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new ImageRun({ data: imagemBlob, transformation: { width: 500, height: 300 } })] }),
           new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: "# Recomendações Estratégicas", bold: true, size: 32, color: "1a3a5c" })] }),
+          new Paragraph({ children: [new TextRun({ text: "# Recomendações Estratégicas", bold: true, size: 32 })] }),
           new Paragraph({ children: [new TextRun({ text: document.getElementById('editItem3')?.value || '', size: 24 })] }),
           new Paragraph({ children: [] }),
-          ...TEXTO_FIXO_ITEM4.split('\n').filter(p => p.trim()).map(p => new Paragraph({ children: [new TextRun({ text: p, size: 24, bold: p.startsWith('#') })] })),
+          new Paragraph({ children: [new TextRun({ text: TEXTO_FIXO_ITEM4, size: 24 })] }),
           new Paragraph({ children: [] }),
-          new Paragraph({ children: [new TextRun({ text: TABELA_POLITICA, size: 22, font: "Courier New" })] }),
+          new Paragraph({ children: [new TextRun({ text: TABELA_POLITICA, size: 22 })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: `João Pessoa, ${dataAtual}`, size: 24 })] })
         ]
@@ -396,10 +402,10 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
     
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.docx`);
-    setStatus('✅ DOCX gerado com sucesso!', 'ok');
-  } catch (error) {
-    console.error('Erro no DOCX:', error);
-    setStatus(`❌ Erro ao gerar DOCX: ${error.message}`, 'err');
+    setStatus('✅ DOCX gerado!', 'ok');
+  } catch (err) {
+    console.error(err);
+    setStatus(`❌ Erro DOCX: ${err.message}`, 'err');
   } finally {
     setOverlay(false);
   }
