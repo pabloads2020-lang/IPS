@@ -225,7 +225,7 @@ function safeString(value, defaultValue = '') {
 
 document.getElementById('btnSalvarKey').onclick = () => { const val = document.getElementById('apiKeyInput').value.trim(); if(val) localStorage.setItem('gemini_api_key', val); updateApiStatus(); };
 document.getElementById('apiEye').onclick = () => { const inp = document.getElementById('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; };
-function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave'; el.className = 'api-status'; } }
+function updateApiStatus() { const key = getApiKey(); const el = document.getElementById('apiStatus'); if(key && key.startsWith('AIza')) { el.textContent = '✅ Chave salva'; el.className = 'api-status valid'; document.getElementById('apiKeyInput').value = key; } else { el.textContent = '⚠️ Nenhuma chave válida. Clique em "Gerar chave gratuita"'; el.className = 'api-status'; } }
 updateApiStatus();
 
 let ultimoJson = null, chart = null;
@@ -242,17 +242,31 @@ document.getElementById('btnLimpar').onclick = () => {
 document.getElementById('btnGerarIPS').onclick = async () => {
   const anamnese = document.getElementById('anamneseInput').value.trim();
   const apiKey = getApiKey();
-  if(!anamnese) { setStatus('❌ Cole a anamnese', 'err'); return; }
-  if(!apiKey) { setStatus('❌ Configure a chave API', 'err'); return; }
-  setOverlay(true, 'IA analisando...');
+  if(!anamnese) { setStatus('❌ Cole a anamnese do cliente', 'err'); return; }
+  if(!apiKey || !apiKey.startsWith('AIza')) { setStatus('❌ Configure uma chave API válida do Gemini', 'err'); return; }
+  setOverlay(true, 'IA analisando a anamnese...');
   try {
-    const prompt = `Você é um planejador financeiro sênior da Pleno. Use este exemplo como REFERÊNCIA de qualidade e estrutura:
+    const prompt = `Você é um planejador financeiro sênior da Pleno Gestão de Investimentos.
 
+REFERÊNCIA de formato e qualidade (use como modelo, mas personalize com os dados do cliente abaixo):
 ${MODELO_IPS}
 
-Gere um NOVO IPS completo e personalizado com base na anamnese abaixo. Siga EXATAMENTE a mesma estrutura (subtópicos, detalhamento, linguagem profissional). Retorne SOMENTE JSON com: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.
+AGORA, com base EXCLUSIVAMENTE na anamnese do cliente abaixo, gere um NOVO IPS completo e personalizado.
+Siga a MESMA estrutura do exemplo: Introdução (fale sobre a Pleno), Sobre o Cliente (detalhado), Avaliações (com números), Recomendações estratégicas.
 
-Anamnese:
+Você DEVE retornar UM ÚNICO OBJETO JSON válido, sem texto antes ou depois, com os campos:
+- nome_cliente (string)
+- item1_sobre_cliente (string com toda a seção "Sobre o Cliente" detalhada)
+- item2_avaliacoes (string com a seção "Avaliações" incluindo patrimônio, alocação e projeção)
+- item3_recomendacoes (string com a seção "Recomendações estratégicas")
+- patrimonio (número em reais)
+- renda_mensal (número em reais)
+- aporte_mensal (número em reais)
+- periodo_anos (número)
+- retorno_bruto (número percentual, ex: 9.5)
+- inflacao (número percentual, ex: 4.5)
+
+ANAMNESE DO CLIENTE:
 ${anamnese}`;
 
     const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -260,20 +274,49 @@ ${anamnese}`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
     });
-    const data = await resposta.json();
-    if (data.error) throw new Error(data.error.message);
-    const texto = data.candidates[0].content.parts[0].text;
-    const jsonMatch = texto.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado');
-    ultimoJson = JSON.parse(jsonMatch[0]);
     
+    const data = await resposta.json();
+    console.log('🔍 Resposta completa da API:', data);
+    
+    if (data.error) throw new Error(data.error.message);
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) throw new Error('Resposta vazia da API');
+    
+    const texto = data.candidates[0].content.parts[0].text;
+    console.log('🔍 Texto bruto retornado pela IA:', texto);
+    
+    // Tenta extrair JSON mesmo com texto ao redor
+    let jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      // Tenta encontrar algo que pareça JSON
+      const possibleJson = texto.substring(texto.indexOf('{'), texto.lastIndexOf('}') + 1);
+      if (possibleJson && possibleJson.length > 10) jsonMatch = [possibleJson];
+      else throw new Error('Não foi possível encontrar JSON na resposta da IA');
+    }
+    
+    ultimoJson = JSON.parse(jsonMatch[0]);
+    console.log('🔍 JSON parseado:', ultimoJson);
+    
+    // VALORES PADRÃO para evitar campos em branco
+    ultimoJson.nome_cliente = ultimoJson.nome_cliente || 'Cliente';
+    ultimoJson.item1_sobre_cliente = ultimoJson.item1_sobre_cliente || 'Informações do cliente não fornecidas pela IA. Verifique a anamnese e tente novamente.';
+    ultimoJson.item2_avaliacoes = ultimoJson.item2_avaliacoes || 'Avaliações não disponíveis.';
+    ultimoJson.item3_recomendacoes = ultimoJson.item3_recomendacoes || 'Recomendações não disponíveis.';
+    ultimoJson.patrimonio = ultimoJson.patrimonio || 0;
+    ultimoJson.renda_mensal = ultimoJson.renda_mensal || 0;
+    ultimoJson.aporte_mensal = ultimoJson.aporte_mensal || 5000;
+    ultimoJson.periodo_anos = ultimoJson.periodo_anos || 30;
+    ultimoJson.retorno_bruto = ultimoJson.retorno_bruto || 9.5;
+    ultimoJson.inflacao = ultimoJson.inflacao || 4.5;
+    
+    // Preenche os campos editáveis
     document.getElementById('editaveisContainer').innerHTML = `
-      <div class="editable-section"><label>📌 Nome</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
+      <div class="editable-section"><label>📌 Nome do Cliente</label><input id="editNome" value="${escapeHtml(safeString(ultimoJson.nome_cliente))}"></div>
       <div class="editable-section"><label>👤 Sobre o Cliente</label><textarea id="editItem1" rows="14">${escapeHtml(safeString(ultimoJson.item1_sobre_cliente))}</textarea></div>
       <div class="editable-section"><label>📊 Avaliações</label><textarea id="editItem2" rows="12">${escapeHtml(safeString(ultimoJson.item2_avaliacoes))}</textarea></div>
-      <div class="editable-section"><label>🎯 Recomendações</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
+      <div class="editable-section"><label>🎯 Recomendações Estratégicas</label><textarea id="editItem3" rows="10">${escapeHtml(safeString(ultimoJson.item3_recomendacoes))}</textarea></div>
     `;
     
+    // Gráfico de projeção patrimonial
     const aporte = parseFloat(ultimoJson.aporte_mensal) || 5000;
     const anos = parseInt(ultimoJson.periodo_anos) || 30;
     const retorno = parseFloat(ultimoJson.retorno_bruto) / 100 || 0.095;
@@ -290,27 +333,27 @@ ${anamnese}`;
     if(chart) chart.destroy();
     chart = new Chart(ctx, {
       type: 'line',
-      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false }] },
-      options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
+      data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data: dados, borderColor: '#f5c842', tension: 0.3, fill: false, borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => `R$ ${ctx.raw.toLocaleString('pt-BR')}` } } } }
     });
     
     document.getElementById('resultArea').style.display = 'block';
-    setStatus('✅ IPS gerado! Edite se necessário.', 'ok');
+    setStatus('✅ IPS gerado com sucesso! Você pode editar os campos antes de exportar.', 'ok');
   } catch (error) {
-    setStatus(`❌ ${error.message}`, 'err');
+    console.error('❌ Erro detalhado:', error);
+    setStatus(`❌ Erro: ${error.message}`, 'err');
   } finally {
     setOverlay(false);
   }
 };
 
 document.getElementById('btnExportarDOCX').onclick = async () => {
-  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado', 'err'); return; }
-  setOverlay(true, 'Gerando DOCX profissional...');
+  if(!ultimoJson) { setStatus('❌ Nenhum IPS gerado ainda', 'err'); return; }
+  setOverlay(true, 'Gerando arquivo DOCX profissional...');
   try {
     const nome = document.getElementById('editNome')?.value || ultimoJson.nome_cliente || 'Cliente';
     const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     
-    // Capturar gráfico como imagem
     const canvas = document.getElementById('graficoPatrimonio');
     const imagemURL = canvas.toDataURL('image/png');
     const imagemBlob = await (await fetch(imagemURL)).blob();
@@ -353,8 +396,9 @@ document.getElementById('btnExportarDOCX').onclick = async () => {
     
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `IPS_${nome.replace(/ /g,'_')}.docx`);
-    setStatus('✅ DOCX profissional gerado!', 'ok');
+    setStatus('✅ DOCX gerado com sucesso!', 'ok');
   } catch (error) {
+    console.error('Erro no DOCX:', error);
     setStatus(`❌ Erro ao gerar DOCX: ${error.message}`, 'err');
   } finally {
     setOverlay(false);
