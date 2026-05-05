@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerador de IPS · Pleno</title>
+<title>IPS Gerador · Pleno</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
@@ -28,6 +28,10 @@
 
 <div class="overlay" id="overlay"><div class="spinner"></div><div>Processando...</div></div>
 
+<!-- Logs -->
+<button id="btnShowLogs">📋 Mostrar Logs de Depuração</button>
+<pre id="debugLogOutput" style="display:none; background:#111; color:#eee; padding:1rem; margin-top:1rem; white-space:pre-wrap;"></pre>
+
 <div class="card">
   <h3>🔑 API Key</h3>
   <input type="password" id="apiKeyInput" placeholder="Cole sua chave AIza...">
@@ -40,6 +44,7 @@
   <textarea id="anamneseInput" rows="8" placeholder="Cole aqui o texto da reunião..."></textarea>
   <button onclick="gerarIPS()">✨ Gerar IPS</button>
   <button onclick="limpar()">🗑️ Limpar</button>
+  <button id="btnTestDocx">🧪 Testar DOCX (sem IA)</button>
   <div id="statusMsg"></div>
 </div>
 
@@ -53,6 +58,21 @@
 </div>
 
 <script>
+// Logs globais
+window.DEBUG_LOGS = [];
+function debugLog(type, message, data = null) {
+  const ts = new Date().toISOString();
+  const logEntry = `[${ts}] [${type}] ${message}${data ? '\n→ ' + JSON.stringify(data, null, 2) : ''}`;
+  window.DEBUG_LOGS.push(logEntry);
+  console.log(`[${type}]`, message, data || '');
+}
+document.getElementById('btnShowLogs').onclick = () => {
+  const output = document.getElementById('debugLogOutput');
+  output.style.display = output.style.display === 'none' ? 'block' : 'none';
+  output.textContent = window.DEBUG_LOGS.join('\n\n') || 'Nenhum log registrado.';
+};
+
+// Textos fixos
 const TEXTO_INTRODUCAO = `Fundada em 2019, a Pleno Gestão de Investimentos nasceu para suprir a demanda por uma gestão patrimonial especializada no Nordeste. Com uma equipe de alta formação acadêmica e certificações de elite, consolidamos um modelo diferenciado que foca em um único propósito: cuidar do seu patrimônio para que você possa viver uma vida plena.\n\nNossa metodologia integra gestão e planejamento em um processo contínuo de análise, seleção e monitoramento de ativos. Tudo começa com um planejamento financeiro que entrega uma visão 360° da sua realidade, partindo de um diagnóstico detalhado sobre ativos, passivos e eficiência fiscal. Esse cuidado se estende ao entendimento do seu perfil humano, alinhando cada estratégia aos seus objetivos e às aspirações da sua família. Por fim, a execução racional garante que todas as decisões sejam transparentes e baseadas estritamente em dados, mantendo o foco nos resultados e eliminando o peso das emoções.`;
 
 const TEXTO_FIXO_ITEM4 = `4. Análise, Seleção e Monitoramento de Ativos\n\nO processo de gestão de investimentos inicia-se pela integração do planejamento financeiro do cliente com uma rigorosa análise macroeconômica. Fundamentamos essa etapa no monitoramento de indicadores globais e domésticos — como PIB, inflação, juros e balança comercial — abrangendo as economias do Brasil, EUA, União Europeia, China e Japão. A partir desses dados e das expectativas do mercado, projetamos cenários que incorporam riscos e impactos estimados, servindo como base estratégica para a estruturação de todas as carteiras.\n\nComplementarmente, realizamos análises microeconômicas e setoriais específicas para o mercado brasileiro, estabelecendo cenários-base que orientam a tomada de decisão. A alocação de ativos é estritamente guiada pela Política de Investimento (PI), respeitando sempre os limites de concentração e a necessidade de liquidez de cada classe. Esse fluxo assegura que a composição do portfólio esteja alinhada tanto às condições de mercado quanto às diretrizes de segurança e objetivos de cada investidor executando o seguinte processo:\n\nTítulos Públicos:\nAnalisamos o duration e eventuais distorções entre o valor de mercado e as projeções do cenário-base, buscando oportunidades de reprecificação em títulos prefixados e indexados. Já para a parcela pós-fixada, a alocação é dimensionada estrategicamente para atender aos objetivos de liquidez da carteira.\n\nTítulos Privados:\nValidamos o rating do emissor através de uma análise própria baseada nos 5 C’s do crédito e em testes de estresse para cenários adversos. A seleção final prioriza a melhor relação risco-retorno, considerando duration, liquidez e eficiência tributária, sempre em estrita conformidade com a Política de Investimento (PI).\n\nCotas de Fundos:\nA seleção de fundos integra análises qualitativas — focadas na experiência da equipe e no histórico da gestora sob estresse — e quantitativas, que utilizam os índices de Sharpe e Treynor para avaliar a eficiência. Além disso, monitoramos a correlação com o benchmark e a volatilidade das cotas para garantir o alinhamento estratégico.\n\nAções:\nA seleção de ações combina análise fundamentalista — avaliando indicadores operacionais (como o ROE), múltiplos de mercado e forças competitivas — com análise técnica para a definição do timing de entrada. A exposição final é rigorosamente calibrada conforme os limites de concentração estabelecidos na Política de Investimento (PI).\n\nImportante: Reconhecendo a incerteza inerente aos mercados, adotamos uma postura de humildade epistemológica, estruturando proteções para cenários em que as projeções base não se materializem.`;
@@ -66,16 +86,25 @@ function salvarChave() {
   if (key) {
     localStorage.setItem('gemini_api_key', key);
     document.getElementById('statusKey').textContent = '✅ Chave salva!';
+    debugLog('UI', 'Chave salva no localStorage');
   }
 }
 function getApiKey() {
   return localStorage.getItem('gemini_api_key') || '';
 }
-
 function setStatus(msg, ok = true) {
   const el = document.getElementById('statusMsg');
   el.textContent = msg;
   el.style.color = ok ? 'limegreen' : 'tomato';
+}
+
+function preencherEdicaoComJson(json) {
+  document.getElementById('editaveisContainer').innerHTML = `
+    <div class="editable-section"><label>Nome do Cliente</label><input id="editNome" value="${json.nome_cliente || ''}"></div>
+    <div class="editable-section"><label>#1. Sobre o Cliente</label><textarea id="editItem1" rows="12">${json.item1 || ''}</textarea></div>
+    <div class="editable-section"><label>#2. Avaliações</label><textarea id="editItem2" rows="10">${json.item2 || ''}</textarea></div>
+    <div class="editable-section"><label>#3. Recomendações</label><textarea id="editItem3" rows="12">${json.item3 || ''}</textarea></div>
+  `;
 }
 
 async function gerarIPS() {
@@ -85,6 +114,8 @@ async function gerarIPS() {
   if (!key) return setStatus('❌ Configure a chave API.', false);
 
   document.getElementById('overlay').classList.add('show');
+  debugLog('API', 'Iniciando chamada à API...', { anamneseLength: anamnese.length });
+
   try {
     const prompt = `Você é um especialista da Pleno Gestão. A partir da anamnese, gere um JSON contendo os campos abaixo. Retorne SOMENTE o JSON, sem comentários ou explicações.
 
@@ -108,22 +139,21 @@ ${anamnese}`;
     });
 
     const data = await res.json();
+    debugLog('API-RESPONSE', 'Resposta recebida', { status: res.status, hasError: !!data.error, hasCandidates: !!data.candidates });
+
+    if (data.error) throw new Error(data.error.message || 'Erro desconhecido da API');
+
     const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const match = texto.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Resposta da IA sem JSON.");
-
+    if (!match) throw new Error("JSON não encontrado na resposta.");
     ultimoJson = JSON.parse(match[0]);
-    document.getElementById('editaveisContainer').innerHTML = `
-      <div class="editable-section"><label>Nome do Cliente</label><input id="editNome" value="${ultimoJson.nome_cliente}"></div>
-      <div class="editable-section"><label>#1. Sobre o Cliente</label><textarea id="editItem1" rows="12">${ultimoJson.item1}</textarea></div>
-      <div class="editable-section"><label>#2. Avaliações</label><textarea id="editItem2" rows="10">${ultimoJson.item2}</textarea></div>
-      <div class="editable-section"><label>#3. Recomendações</label><textarea id="editItem3" rows="12">${ultimoJson.item3}</textarea></div>
-    `;
-
+    preencherEdicaoComJson(ultimoJson);
     renderizarGrafico(ultimoJson.patrimonio, ultimoJson.aporte, ultimoJson.anos);
     document.getElementById('resultArea').style.display = 'block';
     setStatus('✅ IPS gerado com sucesso!');
+    debugLog('API-SUCCESS', 'JSON extraído e interface atualizada', { nome: ultimoJson.nome_cliente });
   } catch (e) {
+    debugLog('API-ERROR', 'Erro na chamada à API', { message: e.message, stack: e.stack });
     setStatus(`❌ Erro: ${e.message}`, false);
   } finally {
     document.getElementById('overlay').classList.remove('show');
@@ -145,122 +175,4 @@ function renderizarGrafico(p, a, anos) {
     data: { labels, datasets: [{ label: 'Patrimônio Projetado (R$)', data, borderColor: '#f5c842', tension: 0.2 }] },
     options: { responsive: true, plugins: { legend: { display: false } } }
   });
-}
-
-function limpar() {
-  document.getElementById('anamneseInput').value = '';
-  document.getElementById('resultArea').style.display = 'none';
-  if(chart) { chart.destroy(); chart = null; }
-  ultimoJson = null;
-  setStatus('🧹 Limpado.');
-}
-
-// --- DOCX EXPORTAÇÃO ---
-function splitToParagraphs(text, bold = false) {
-  const { Paragraph, TextRun } = docx;
-  return text.split('\n').map(line => new Paragraph({
-    children: [new TextRun({ text: line, bold, size: 24 })],
-    spacing: { after: 150 }
-  }));
-}
-
-async function exportarDOCX() {
-  if (!ultimoJson) return setStatus('❌ Nenhum IPS gerado.', false);
-  document.getElementById('overlay').classList.add('show');
-
-  try {
-    const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, HeadingLevel } = docx;
-
-    // --- preparar imagem do gráfico (fallback sem imagem habilitado) ---
-    let imageUint8 = null;
-    try {
-      const canvas = document.getElementById('graficoPatrimonio');
-      if (canvas) {
-        const dataUrl = canvas.toDataURL('image/png');
-        const ab = await fetch(dataUrl).then(r => r.arrayBuffer());
-        imageUint8 = new Uint8Array(ab); // IMPORTANTE: ImageRun espera TypedArray
-        console.log('[DOCX] imagem capturada, bytes=', imageUint8.length);
-      }
-    } catch (imgErr) {
-      console.warn('[DOCX] falha ao capturar imagem (continuando sem imagem):', imgErr);
-      imageUint8 = null;
-    }
-
-    // --- util para dividir textos longos em parágrafos seguros ---
-    function safeParagraphs(text, bold = false) {
-      const MAX_CHUNK = 1000; // evita paragrafos gigantes
-      const children = [];
-      if (!text) return [];
-      // primeiro preserve quebras de linha explícitas
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      for (let line of lines) {
-        if (line.length <= MAX_CHUNK) {
-          children.push(new Paragraph({ children: [new TextRun({ text: line, bold, size: 24 })], spacing: { after: 150 } }));
-        } else {
-          // dividir em pedaços menores
-          for (let i = 0; i < line.length; i += MAX_CHUNK) {
-            const chunk = line.slice(i, i + MAX_CHUNK);
-            children.push(new Paragraph({ children: [new TextRun({ text: chunk, bold, size: 24 })], spacing: { after: 150 } }));
-          }
-        }
-      }
-      return children;
-    }
-
-    // --- montar documento ---
-    const docChildren = [];
-
-    docChildren.push(new Paragraph({ text: "PLANO INICIAL", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }));
-    docChildren.push(new Paragraph({ text: document.getElementById('editNome').value || ultimoJson.nome_cliente || '', bold: true, alignment: AlignmentType.CENTER }));
-
-    docChildren.push(new Paragraph({ text: "Introdução", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(TEXTO_INTRODUCAO));
-
-    docChildren.push(new Paragraph({ text: "1. Sobre o Cliente", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(document.getElementById('editItem1').value || ultimoJson.item1));
-
-    docChildren.push(new Paragraph({ text: "2. Avaliações", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(document.getElementById('editItem2').value || ultimoJson.item2));
-
-    if (imageUint8) {
-      docChildren.push(new Paragraph({ children: [new ImageRun({ data: imageUint8, transformation: { width: 550, height: 300 } })], alignment: AlignmentType.CENTER }));
-    } else {
-      console.log('[DOCX] pulando imagem no DOCX (imagem não disponível).');
-    }
-
-    docChildren.push(new Paragraph({ text: "3. Recomendações Estratégicas", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(document.getElementById('editItem3').value || ultimoJson.item3));
-
-    docChildren.push(new Paragraph({ text: "4. Análise, Seleção e Monitoramento de Ativos", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(TEXTO_FIXO_ITEM4));
-
-    docChildren.push(new Paragraph({ text: "5. Política de Investimento", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }));
-    docChildren.push(...safeParagraphs(TABELA_POLITICA));
-
-    const doc = new Document({ sections: [{ children: docChildren }] });
-
-    // --- logs para debug: quantos parágrafos e tamanho estimado ---
-    const totalParagraphs = docChildren.length;
-    const totalChars = (document.getElementById('editItem1').value || '').length +
-                       (document.getElementById('editItem2').value || '').length +
-                       (document.getElementById('editItem3').value || '').length +
-                       TEXTO_INTRODUCAO.length + TEXTO_FIXO_ITEM4.length + TABELA_POLITICA.length;
-    console.log(`[DOCX] parágrafos=${totalParagraphs} chars≈${totalChars}`);
-
-    // --- gerar blob e salvar ---
-    const blob = await Packer.toBlob(doc);
-    const safeName = `IPS_${(document.getElementById('editNome').value || ultimoJson.nome_cliente || 'cliente').replace(/[^a-zA-Z0-9_\\-]/g,'_')}.docx`;
-    saveAs(blob, safeName);
-    setStatus('✅ Arquivo DOCX salvo!');
-  } catch (e) {
-    console.error('[DOCX] erro durante exportação:', e);
-    // mostrar stack detalhada para depuração
-    setStatus(`❌ Erro ao exportar: ${e.message || e}`, false);
-    alert('Erro ao exportar DOCX — veja Console (F12) para detalhes.');
-  } finally {
-    document.getElementById('overlay').classList.remove('show');
-  }
-}
-</script>
-</body>
-</html>
+[object Object]
