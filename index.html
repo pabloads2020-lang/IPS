@@ -176,7 +176,8 @@ document.getElementById('btnGerarIPS').onclick = async () => {
   try {
     const prompt = `Você é um planejador financeiro da Pleno. Use este EXATO modelo de IPS como referência de estilo, tom e estrutura:\n\n${MODELO_IPS}\n\nAgora, com base na anamnese abaixo, gere um NOVO IPS completo e personalizado. Retorne SOMENTE um JSON válido SEM formatação adicional, SEM markdown, apenas o JSON com os campos: nome_cliente, item1_sobre_cliente, item2_avaliacoes, item3_recomendacoes, patrimonio, renda_mensal, aporte_mensal, periodo_anos, retorno_bruto, inflacao.\n\nAnamnese:\n${anamnese}`;
 
-    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // USANDO O MESMO MODELO QUE FUNCIONA NO SEU SITE DE FIIs
+    const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -230,8 +231,6 @@ function escapeHtml(str) {
     if (m === '<') return '&lt;';
     if (m === '>') return '&gt;';
     return m;
-  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-    return c;
   });
 }
 
